@@ -1,0 +1,17 @@
+@page {
+  size: A4;
+  margin: 15mm 12mm 15mm 12mm;
+}
+
+:root {
+  --brand: #1a3a5c;
+  --border: #cccccc;
+  --header-bg: #e8edf2;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  color: #111;
+  line-height: 1.4;
+}

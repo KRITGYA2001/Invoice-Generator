@@ -1,5 +1,3 @@
-"""Authentication and user profile API views."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -22,18 +20,14 @@ from accounts.serializers import (
 
 
 def build_success_response(message: str, data: dict[str, Any], status_code: int) -> Response:
-	"""Build a standardized successful API response payload."""
 	return Response({"success": True, "message": message, "data": data}, status=status_code)
 
 
 class RegisterView(GenericAPIView):
-	"""Register a new user and return JWT tokens."""
-
 	serializer_class = RegisterSerializer
 	permission_classes = [AllowAny]
 
 	def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-		"""Handle user registration requests."""
 		serializer = self.get_serializer(data=request.data)
 		serializer.is_valid(raise_exception=True)
 		user = serializer.save()
@@ -55,8 +49,6 @@ class RegisterView(GenericAPIView):
 
 
 class LoginView(GenericAPIView):
-	"""Authenticate a user and return JWT tokens."""
-
 	serializer_class = LoginSerializer
 	permission_classes = [AllowAny]
 
@@ -83,12 +75,9 @@ class LoginView(GenericAPIView):
 
 
 class LogoutView(GenericAPIView):
-	"""Invalidate a refresh token by blacklisting it."""
-
 	permission_classes = [IsAuthenticated]
 
 	def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-		"""Handle logout and token blacklist requests."""
 		token = request.data.get("refresh")
 		if not token:
 			return Response(
@@ -116,13 +105,10 @@ class LogoutView(GenericAPIView):
 
 
 class UserProfileView(GenericAPIView):
-	"""Retrieve or partially update authenticated user profile data."""
-
 	serializer_class = UserProfileSerializer
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-		"""Return the authenticated user's profile."""
 		serializer = self.get_serializer(request.user)
 		return build_success_response("Profile fetched successfully", serializer.data, status.HTTP_200_OK)
 
@@ -135,13 +121,10 @@ class UserProfileView(GenericAPIView):
 
 
 class ChangePasswordView(GenericAPIView):
-	"""Change the authenticated user's password."""
-
 	serializer_class = ChangePasswordSerializer
 	permission_classes = [IsAuthenticated]
 
 	def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-		"""Validate and update user password."""
 		serializer = self.get_serializer(data=request.data)
 		serializer.is_valid(raise_exception=True)
 

@@ -1,0 +1,329 @@
+{% load invoice_filters %}
+<style>
+@page {
+  size: A4;
+  margin: 15mm 12mm 15mm 12mm;
+}
+:root {
+  --brand: #1a3a5c;
+  --border: #ccc;
+  --header-bg: #e8edf2;
+}
+body {
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  color: #111;
+  line-height: 1.4;
+}
+.copy-page {
+  page-break-before: always;
+}
+.copy-page.first-copy {
+  page-break-before: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 4px 6px;
+  vertical-align: top;
+}
+.section-title {
+  color: var(--brand);
+  font-weight: bold;
+}
+.brand-line {
+  border-top: 2px solid var(--brand);
+  margin: 8px 0;
+}
+.invoice-box {
+  border: 2px solid var(--brand);
+  text-align: center;
+  font-weight: bold;
+  padding: 8px;
+}
+.copy-label {
+  text-align: center;
+  font-style: italic;
+  margin-top: 4px;
+}
+.header-table td {
+  border: none;
+  padding: 0;
+}
+.meta-table td {
+  border: none;
+  padding: 2px 4px;
+}
+.line-head th {
+  background-color: var(--header-bg);
+  font-weight: bold;
+}
+.total-row td {
+  background-color: #1a3a5c;
+  color: #fff;
+  font-weight: bold;
+}
+.small {
+  font-size: 10px;
+}
+.bold {
+  font-weight: bold;
+}
+.italic {
+  font-style: italic;
+}
+.right {
+  text-align: right;
+}
+.center {
+  text-align: center;
+}
+.signature-line {
+  border-top: 1px solid #111;
+  margin-top: 24px;
+  padding-top: 4px;
+}
+.qr-box {
+  width: 80px;
+  height: 80px;
+  border: 1px solid var(--border);
+  text-align: center;
+  line-height: 80px;
+  font-size: 10px;
+}
+</style>
+<div class="copy-page {% if first_copy %}first-copy{% endif %}">
+  <table class="header-table">
+    <tr>
+      <td style="width: 70%;">
+        <table class="header-table" style="width:100%;">
+          <tr>
+            <td style="width: 90px; vertical-align: top;">
+              {% if company_logo_src %}
+                <img src="{{ company_logo_src }}" alt="Logo" style="max-height: 60px; max-width: 90px;">
+              {% else %}
+                <div style="background: #1a3a5c; color: #fff; padding: 12px 8px; font-weight: bold; text-align: center;">{{ company.logo_text|default:company.company_name|slice:":6" }}</div>
+              {% endif %}
+            </td>
+            <td style="padding-left: 10px;">
+              <div class="section-title" style="font-size: 18px;">{{ company.company_name }}</div>
+              {% if company.unit_division %}<div class="bold">{{ company.unit_division }}</div>{% endif %}
+              <div>{{ company.address_line1 }}{% if company.address_line2 %}, {{ company.address_line2 }}{% endif %}, {{ company.city }}, {{ company.state }}, {{ company.pincode }}</div>
+              {% if company.pan %}<div>PAN: {{ company.pan }}</div>{% endif %}
+              {% if company.gstin %}<div>GSTIN: {{ company.gstin }}</div>{% endif %}
+              {% if company.udyam_number %}<div>Udyam No.: {{ company.udyam_number }}</div>{% endif %}
+              <div>Tel: {{ company.mobile_primary }}{% if company.mobile_secondary %}, {{ company.mobile_secondary }}{% endif %} {% if company.email %} Email: {{ company.email }}{% endif %}</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+      <td style="width: 30%; vertical-align: top; padding-left: 10px;">
+        <div class="invoice-box">TAX INVOICE</div>
+        <div class="copy-label">{{ copy_label }}</div>
+      </td>
+    </tr>
+  </table>
+  <div class="brand-line"></div>
+
+  <table class="meta-table" style="width:100%; margin-top: 4px;">
+    <tr>
+      <td style="width: 50%;">
+        <table class="meta-table" style="width:100%;">
+          <tr><td style="width: 34%;">Invoice No.</td><td>: {{ invoice.invoice_number }}</td></tr>
+          <tr><td>Dated</td><td>: {{ invoice.invoice_date|format_date_indian }}</td></tr>
+          <tr><td>Place of Supply</td><td>: {{ invoice.place_of_supply }} ({{ invoice.place_of_supply_code }})</td></tr>
+          <tr><td>Reverse Charge</td><td>: {% if invoice.reverse_charge %}Y{% else %}N{% endif %}</td></tr>
+          <tr><td>GR/RR No.</td><td>: &nbsp;</td></tr>
+          <tr><td>Transport</td><td>: {{ invoice.transport_mode }}</td></tr>
+        </table>
+      </td>
+      <td style="width: 50%;">
+        <table class="meta-table" style="width:100%;">
+          <tr><td style="width: 34%;">Vehicle No.</td><td>: {{ invoice.vehicle_number }}</td></tr>
+          <tr><td>Station</td><td>: {{ invoice.station }}</td></tr>
+          <tr><td>E-Way Bill No.</td><td>: {{ invoice.eway_bill_number }}</td></tr>
+          <tr><td>P.O. Number</td><td>: {{ invoice.po_number }}</td></tr>
+          <tr><td>P.O. Date</td><td>: {{ invoice.po_date|format_date_indian }}</td></tr>
+          <tr><td>Vendor Code</td><td>: &nbsp;</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <table style="margin-top: 6px;">
+    <tr>
+      <td style="width: 50%;">
+        <div class="bold">Billed to :</div>
+        <div class="bold">{{ invoice.customer_name }}</div>
+        <div>{{ invoice.customer_address|linebreaksbr }}</div>
+        <div>Party Mobile No : {{ invoice.customer_mobile }}</div>
+        <div>GSTIN / UIN : {{ invoice.customer_gstin }}</div>
+      </td>
+      <td style="width: 50%;">
+        <div class="bold">Shipped to :</div>
+        <div class="bold">{{ invoice.shipping_name|default:invoice.customer_name }}</div>
+        <div>{{ invoice.shipping_address|default:invoice.customer_address|linebreaksbr }}</div>
+        <div>Party Mobile No : {{ invoice.customer_mobile }}</div>
+        <div>GSTIN / UIN : {{ invoice.customer_gstin }}</div>
+      </td>
+    </tr>
+  </table>
+
+  {% if invoice.irn %}
+  <table style="margin-top: 6px;">
+    <tr>
+      <td>IRN: {{ invoice.irn }}&nbsp;&nbsp;&nbsp; Ack.No.: &nbsp;&nbsp;&nbsp; Ack.Date: {{ invoice.irn_generated_at|format_date_indian }}</td>
+    </tr>
+  </table>
+  {% endif %}
+
+  <table style="margin-top: 6px;">
+    <tr class="line-head">
+      <th style="width: 6%;">S.N.</th>
+      <th style="width: 44%;">Description of Goods</th>
+      <th style="width: 12%;">HSN/SAC Code</th>
+      <th style="width: 8%;">Qty.</th>
+      <th style="width: 8%;">Unit</th>
+      <th style="width: 11%;">Price</th>
+      <th style="width: 11%;">Amount(₹)</th>
+    </tr>
+    {% for line_item in invoice.line_items.all %}
+    <tr>
+      <td class="center">{{ line_item.sr_no }}</td>
+      <td>
+        <div class="bold">{{ line_item.product_name }}</div>
+        {% if line_item.description %}<div class="small">{{ line_item.description }}</div>{% endif %}
+      </td>
+      <td class="center">{{ line_item.hsn_code }}</td>
+      <td class="right">{{ line_item.quantity|strip_zeros }}</td>
+      <td class="center">{{ line_item.unit }}</td>
+      <td class="right">{{ line_item.unit_price|indian_currency }}</td>
+      <td class="right">{{ line_item.taxable_amount|indian_currency }}</td>
+    </tr>
+    {% endfor %}
+    {% with first_item=invoice.line_items.all|first breakdown_row=gst_breakdown|first %}
+    {% if not invoice.is_interstate %}
+    <tr>
+        <td colspan="6" class="right">Add : CGST @ {{ first_item.cgst_rate|default:0 }} %</td>
+      <td class="right">₹{{ invoice.total_cgst|indian_currency }}</td>
+    </tr>
+    <tr>
+        <td colspan="6" class="right">Add : SGST @ {{ first_item.sgst_rate|default:0 }} %</td>
+      <td class="right">₹{{ invoice.total_sgst|indian_currency }}</td>
+    </tr>
+    {% else %}
+    <tr>
+        <td colspan="6" class="right">Add : IGST @ {{ first_item.igst_rate|default:0 }} %</td>
+      <td class="right">₹{{ invoice.total_igst|indian_currency }}</td>
+    </tr>
+    {% endif %}
+    {% if invoice.total_cess > 0 %}
+    <tr>
+        <td colspan="6" class="right">Add : CESS @ {{ first_item.cess_rate|default:0 }} %</td>
+      <td class="right">₹{{ invoice.total_cess|indian_currency }}</td>
+    </tr>
+    {% endif %}
+    {% if invoice.round_off != 0 %}
+    <tr>
+      <td colspan="6" class="right">Round Off</td>
+      <td class="right">₹{{ invoice.round_off|indian_currency }}</td>
+    </tr>
+    {% endif %}
+    <tr class="total-row">
+      <td colspan="6" class="right">Grand Total ₹</td>
+      <td class="right">{{ invoice.grand_total|indian_currency }}</td>
+    </tr>
+  </table>
+
+  <table style="margin-top: 6px;">
+    <tr>
+      {% if not invoice.is_interstate %}
+      <th>Tax Rate</th><th>Taxable Amt.</th><th>CGST Amt.</th><th>SGST Amt.</th><th>Total Tax</th>
+      {% else %}
+      <th>Tax Rate</th><th>Taxable Amt.</th><th>IGST Amt.</th><th>Total Tax</th>
+      {% endif %}
+    </tr>
+    {% for row in gst_breakdown %}
+    <tr>
+      <td class="center">{{ row.gst_rate }}%</td>
+      <td class="right">{{ row.taxable_amount|indian_currency }}</td>
+      {% if not invoice.is_interstate %}
+      <td class="right">{{ row.cgst_amount|indian_currency }}</td>
+      <td class="right">{{ row.sgst_amount|indian_currency }}</td>
+      {% else %}
+      <td class="right">{{ row.igst_amount|indian_currency }}</td>
+      {% endif %}
+      <td class="right">{{ row.total_tax|indian_currency }}</td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td class="right bold">Total</td>
+      <td class="right bold">{{ invoice.subtotal|indian_currency }}</td>
+      {% if not invoice.is_interstate %}
+      <td class="right bold">{{ invoice.total_cgst|indian_currency }}</td>
+      <td class="right bold">{{ invoice.total_sgst|indian_currency }}</td>
+      {% else %}
+      <td class="right bold">{{ invoice.total_igst|indian_currency }}</td>
+      {% endif %}
+      <td class="right bold">{{ invoice.total_tax|indian_currency }}</td>
+    </tr>
+  </table>
+
+  <table style="margin-top: 6px;">
+    <tr>
+      <td class="bold italic">{{ invoice.amount_in_words }}</td>
+    </tr>
+  </table>
+
+  {% if settings.show_bank_details and bank %}
+  <table style="margin-top: 6px;">
+    <tr>
+      <td>
+        <div class="bold">Bank Details:</div>
+        <div>{{ bank.bank_name }}, {{ bank.branch_name }} A/c No. {{ bank.account_number }}, IFSC Code {{ bank.ifsc_code }}{% if bank.ad_code %} AD Code {{ bank.ad_code }}{% endif %}{% if bank.swift_code %} SWIFT Code {{ bank.swift_code }}{% endif %}</div>
+        {% if bank.upi_id %}<div>UPI: {{ bank.upi_id }}</div>{% endif %}
+        {% if bank_qr_src %}<div><img src="{{ bank_qr_src }}" alt="QR" style="max-width: 80px; max-height: 80px;"></div>{% endif %}
+      </td>
+    </tr>
+  </table>
+  {% endif %}
+
+  <table style="margin-top: 6px;">
+    <tr>
+      <td style="width: 38%; vertical-align: top;">
+        <div class="bold">Terms & Conditions</div>
+        {% if invoice.terms_and_conditions %}
+          {% for term in invoice.terms_and_conditions|split_lines %}
+            {% if term %}<div>{{ forloop.counter }}. {{ term }}</div>{% endif %}
+          {% endfor %}
+        {% endif %}
+      </td>
+      <td style="width: 24%; vertical-align: top; text-align: center;">
+        <div class="bold">E-Invoice QR Code</div>
+        <div class="qr-box">{% if invoice.irn %}QR{% else %}&nbsp;{% endif %}</div>
+      </td>
+      <td style="width: 38%; vertical-align: top;">
+        <div>Receiver's Signature :</div>
+        <div style="height: 40px;"></div>
+        <div class="signature-line"></div>
+        <div>for {{ company.company_name }}</div>
+        {% if settings.show_signature and company_signature_src %}
+          <div><img src="{{ company_signature_src }}" alt="Signature" style="max-height: 50px;"></div>
+        {% endif %}
+        <div>{{ company.authorised_signatory }}</div>
+      </td>
+    </tr>
+  </table>
+
+  {% if invoice.notes %}
+  <table style="margin-top: 6px;">
+    <tr>
+      <td class="small italic">Note: {{ invoice.notes }}</td>
+    </tr>
+  </table>
+  {% endif %}
+  {% endwith %}
+</div>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 14px; color: #222; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 24px; }
+    .card { border: 1px solid #d6dce3; padding: 20px; }
+    .heading { color: #1a3a5c; font-size: 20px; font-weight: bold; margin-bottom: 12px; }
+    .meta { margin-top: 14px; }
+    .footer { margin-top: 20px; font-size: 12px; color: #666; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 4px 0; vertical-align: top; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="heading">Invoice {{ invoice.invoice_number }}</div>
+      <p>Dear {{ invoice.customer_name }},</p>
+      <p>Please find attached Invoice {{ invoice.invoice_number }} dated {{ invoice.invoice_date|date:"d-m-Y" }} for ₹{{ invoice.grand_total }}.</p>
+      {% if invoice.due_date %}
+      <p>Payment due by {{ invoice.due_date|date:"d-m-Y" }}.</p>
+      {% endif %}
+      <div class="meta">
+        <table>
+          <tr><td><strong>Bank</strong></td><td>{{ bank.bank_name|default:"-" }}</td></tr>
+          <tr><td><strong>Account No.</strong></td><td>{{ bank.account_number|default:"-" }}</td></tr>
+          <tr><td><strong>IFSC</strong></td><td>{{ bank.ifsc_code|default:"-" }}</td></tr>
+          {% if bank.upi_id %}
+          <tr><td><strong>UPI</strong></td><td>{{ bank.upi_id }}</td></tr>
+          {% endif %}
+        </table>
+      </div>
+      <div class="footer">
+        {{ company.company_name }}<br>
+        {{ company.mobile_primary }}{% if company.email %} | {{ company.email }}{% endif %}
+      </div>
+    </div>
+  </div>
+</body>
+</html>
