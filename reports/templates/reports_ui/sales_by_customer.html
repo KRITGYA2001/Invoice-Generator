@@ -1,0 +1,51 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+
+{% block title %}Sales by Customer{% endblock %}
+
+{% block content %}
+  <div class="page-shell report-shell" id="report-results">
+    <div class="page-header report-header">
+      <div>
+        <div class="eyebrow">Sales</div>
+        <h1 class="page-title">Sales by customer</h1>
+        <p class="page-subtitle">Period {{ period_label }}</p>
+      </div>
+      <div class="report-actions no-print">
+        <a class="btn btn-secondary" href="{% url 'reports_ui:sales-report' %}">Back to sales reports</a>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <section class="metric-grid">
+      <article class="stat-card"><div class="stat-label">Revenue</div><div class="stat-value">{{ sales_by_customer.total_revenue|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">Customers</div><div class="stat-value">{{ sales_by_customer.customers|length }}</div></article>
+      <article class="stat-card"><div class="stat-label">From</div><div class="stat-value">{{ sales_by_customer.period.date_from }}</div></article>
+      <article class="stat-card"><div class="stat-label">To</div><div class="stat-value">{{ sales_by_customer.period.date_to }}</div></article>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><div><div class="card-kicker">Customers</div><h2 class="card-title">Top customer revenue</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead><tr><th>Customer</th><th>GSTIN</th><th>Invoices</th><th class="align-right">Taxable</th><th class="align-right">Tax</th><th class="align-right">Revenue</th><th class="align-right">Share</th></tr></thead>
+          <tbody>
+            {% for row in sales_by_customer.customers %}
+              <tr>
+                <td>{{ row.customer_name }}</td>
+                <td>{{ row.customer_gstin|default:"-" }}</td>
+                <td>{{ row.invoice_count }}</td>
+                <td class="align-right">{{ row.taxable_amount|indian_rupee }}</td>
+                <td class="align-right">{{ row.total_tax|indian_rupee }}</td>
+                <td class="align-right">{{ row.grand_total|indian_rupee }}</td>
+                <td class="align-right">{{ row.percentage }}%</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7" class="table-empty">No customer sales found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}

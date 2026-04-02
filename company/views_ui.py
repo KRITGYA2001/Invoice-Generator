@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -13,6 +14,8 @@ from company.models import BankDetail, CompanyProfile, InvoiceSettings
 
 GSTIN_REGEX = re.compile(r"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$")
 IFSC_REGEX = re.compile(r"^[A-Z]{4}0[A-Z0-9]{6}$")
+
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".svg"}
 
 
 def _step_value(request: HttpRequest) -> int:
@@ -46,8 +49,22 @@ def _validate_logo_file(file_obj) -> str | None:
         return None
     if file_obj.size > 2 * 1024 * 1024:
         return "Image must be under 2MB"
-    if not (getattr(file_obj, "content_type", "") or "").startswith("image/"):
+    content_type = (getattr(file_obj, "content_type", "") or "").lower()
+    extension = Path(getattr(file_obj, "name", "") or "").suffix.lower()
+    if not content_type.startswith("image/") and extension not in IMAGE_EXTENSIONS:
         return "Uploaded file must be an image"
+    return None
+
+
+def _validate_qr_file(file_obj) -> str | None:
+    if not file_obj:
+        return None
+    if file_obj.size > 5 * 1024 * 1024:
+        return "QR image must be under 5MB"
+    content_type = (getattr(file_obj, "content_type", "") or "").lower()
+    extension = Path(getattr(file_obj, "name", "") or "").suffix.lower()
+    if not content_type.startswith("image/") and extension not in IMAGE_EXTENSIONS:
+        return "Uploaded QR must be an image"
     return None
 
 
@@ -293,8 +310,12 @@ class BankDetailCreateView(View):
             return response
 
         data, errors = self._validated_data(request)
+        qr_code_image = request.FILES.get("qr_code_image")
+        qr_error = _validate_qr_file(qr_code_image)
+        if qr_error:
+            errors["qr_code_image"] = qr_error
         if errors:
-            return render(request, "company/_bank_form.html", {"bank": None, "errors": errors, "form_data": request.POST}, status=400)
+            return render(request, "company/_bank_form.html", {"bank": None, "errors": errors, "form_data": request.POST})
 
         is_first = not company.bank_details.exists()
         if is_first:
@@ -309,6 +330,7 @@ class BankDetailCreateView(View):
             account_type=data["account_type"],
             upi_id=data["upi_id"],
             swift_code=data["swift_code"],
+            qr_code_image=qr_code_image,
             is_primary=is_first,
             is_active=True,
         )
@@ -319,11 +341,14 @@ class BankDetailCreateView(View):
 
     @staticmethod
     def _validated_data(request: HttpRequest) -> tuple[dict, dict]:
+        account_number_raw = (request.POST.get("account_number") or "").strip()
+        account_number = "".join(ch for ch in account_number_raw if ch.isdigit())
+        ifsc_code = (request.POST.get("ifsc_code") or "").strip().upper().replace(" ", "")
         data = {
             "bank_name": (request.POST.get("bank_name") or "").strip(),
             "branch_name": (request.POST.get("branch_name") or "").strip() or "-",
-            "account_number": (request.POST.get("account_number") or "").strip(),
-            "ifsc_code": (request.POST.get("ifsc_code") or "").strip().upper(),
+            "account_number": account_number,
+            "ifsc_code": ifsc_code,
             "account_type": (request.POST.get("account_type") or "current").strip().lower(),
             "upi_id": (request.POST.get("upi_id") or "").strip(),
             "swift_code": (request.POST.get("swift_code") or "").strip(),
@@ -354,11 +379,17 @@ class BankDetailUpdateView(View):
         bank = get_object_or_404(BankDetail, pk=pk, company=company)
 
         data, errors = BankDetailCreateView._validated_data(request)
+        qr_code_image = request.FILES.get("qr_code_image")
+        qr_error = _validate_qr_file(qr_code_image)
+        if qr_error:
+            errors["qr_code_image"] = qr_error
         if errors:
-            return render(request, "company/_bank_form.html", {"bank": bank, "errors": errors, "form_data": request.POST}, status=400)
+            return render(request, "company/_bank_form.html", {"bank": bank, "errors": errors, "form_data": request.POST})
 
         for field, value in data.items():
             setattr(bank, field, value)
+        if qr_code_image:
+            bank.qr_code_image = qr_code_image
         bank.save()
 
         response = HttpResponse("")

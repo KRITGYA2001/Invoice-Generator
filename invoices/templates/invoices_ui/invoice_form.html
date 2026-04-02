@@ -1,0 +1,545 @@
+{% extends "base/base.html" %}
+{% load ui_tags invoice_filters %}
+{% block title %}{% if is_edit %}Edit Invoice{% else %}New Invoice{% endif %}{% endblock %}
+
+{% block content %}
+<form method="POST" id="invoice-form" x-data="invoiceApp()" x-init="init()">
+  {% csrf_token %}
+
+  {% if error_message %}
+    <div class="alert alert-danger mb-16">{{ error_message }}</div>
+  {% endif %}
+
+  <div class="invoice-form-layout">
+    <div>
+      <div class="card mb-16">
+        <div class="card-title mb-16">Invoice Details</div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label class="form-label">Invoice Number</label>
+            <input class="form-control"
+                   value="{{ invoice.invoice_number|default:invoice_number_preview }}"
+                   {% if is_edit %}name="invoice_number"{% endif %}
+                   readonly
+                   style="background:var(--gray-50);font-family:var(--font-mono)">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Invoice Date</label>
+            <input type="date" name="invoice_date" class="form-control"
+                   value="{{ invoice.invoice_date|date:'Y-m-d'|default:today|date:'Y-m-d' }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Due Date</label>
+            <input type="date" name="due_date" class="form-control" value="{{ invoice.due_date|date:'Y-m-d'|default:'' }}">
+          </div>
+        </div>
+
+        <div class="grid-3" style="margin-top:12px">
+          <div class="form-group">
+            <label class="form-label required">Place of Supply</label>
+            <input name="place_of_supply" class="form-control"
+                   value="{{ invoice.place_of_supply|default:company.state }}"
+                   required x-model="placeOfSupply" @change="updateInterstate()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">State Code</label>
+            <input name="place_of_supply_code" class="form-control"
+                   value="{{ invoice.place_of_supply_code|default:company.state_code }}"
+                   maxlength="2" x-model="placeOfSupplyCode" @change="updateInterstate()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Reverse Charge</label>
+            <select name="reverse_charge" class="form-control">
+              <option value="false" {% if not invoice.reverse_charge %}selected{% endif %}>No</option>
+              <option value="true" {% if invoice.reverse_charge %}selected{% endif %}>Yes</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-16" x-data="{ query: '{{ invoice.customer_name|default:''|escapejs }}', selected: {% if invoice.customer_id %}true{% else %}false{% endif %}, showResults: false, selectedCustomer: null }" @customer-selected.window="selected = true; showResults = false; query = $event.detail.name; selectedCustomer = $event.detail;">
+        <div class="card-title mb-16">Bill To (Party)</div>
+
+        <div class="form-group mb-12">
+          <label class="form-label">Select Party</label>
+          <div style="position:relative">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Search party name, GSTIN or mobile..."
+                   x-model="query"
+                   @focus="showResults = query.length >= 2"
+                   @input="if(query.length >= 2) { showResults = true; } else { showResults = false; }"
+                   @close-search.window="showResults = false"
+                   hx-get="{% url 'invoices_ui:customer-search' %}"
+                   hx-trigger="input changed delay:300ms"
+                   hx-target="#customer-results"
+                   hx-include="this"
+                   name="q"
+                   autocomplete="off">
+
+            <div id="customer-results" class="search-dropdown" x-show="showResults" @click.outside="showResults = false"></div>
+          </div>
+          <input type="hidden" name="customer_id" id="customer-id-input" value="{{ invoice.customer_id|default:'' }}">
+        </div>
+
+        <div x-show="!selected" x-transition>
+          <div class="alert alert-info mb-12" style="font-size:12px">
+            No party selected - fill in manually for walk-in customer
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Customer Name *</label>
+              <input name="customer_name" class="form-control" value="{{ invoice.customer_name|default:'' }}" placeholder="Walk-in Customer">
+            </div>
+            <div class="form-group">
+              <label class="form-label">GSTIN</label>
+              <input name="customer_gstin" class="form-control" value="{{ invoice.customer_gstin|default:'' }}" style="text-transform:uppercase" x-model="customerGSTIN" @input="extractCustomerState()">
+            </div>
+          </div>
+          <div class="grid-3" style="margin-top:10px">
+            <div class="form-group">
+              <label class="form-label">State</label>
+              <input name="customer_state" class="form-control" value="{{ invoice.customer_state|default:'' }}" x-ref="manualState">
+            </div>
+            <div class="form-group">
+              <label class="form-label">State Code</label>
+              <input name="customer_state_code" class="form-control" value="{{ invoice.customer_state_code|default:'' }}" maxlength="2" x-model="customerStateCode" @change="updateInterstate()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mobile</label>
+              <input name="customer_mobile" class="form-control" value="{{ invoice.customer_mobile|default:'' }}" type="tel">
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:10px">
+            <label class="form-label">Address</label>
+            <textarea name="customer_address" class="form-control" rows="2">{{ invoice.customer_address|default:'' }}</textarea>
+          </div>
+        </div>
+
+        <div x-show="selected" id="selected-customer-card" class="selected-customer-card">
+          <div class="flex-between">
+            <div>
+              <div class="font-bold" x-text="selectedCustomer?.name || query"></div>
+              <div class="text-xs text-muted" x-text="(selectedCustomer?.gstin || 'No GSTIN') + ' | ' + (selectedCustomer?.stateName || 'Unknown State')"></div>
+              <div class="text-xs text-muted" x-text="selectedCustomer?.mobile || ''"></div>
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary" @click="selected=false; selectedCustomer=null; query=''; document.getElementById('customer-id-input').value=''; customerStateCode=''; customerStateName=''; updateInterstate();">Change Party</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-16" x-data="{ expanded: false }">
+        <div class="card-header" style="cursor:pointer" @click="expanded = !expanded">
+          <span class="card-title">Transport Details</span>
+          <span x-text="expanded ? 'Up' : 'Down'" class="text-muted text-sm"></span>
+        </div>
+        <div x-show="expanded" x-transition>
+          <div class="grid-3" style="margin-top:14px">
+            <div class="form-group">
+              <label class="form-label">Transport Mode</label>
+              <input name="transport_mode" class="form-control" value="{{ invoice.transport_mode|default:inv_settings.default_transport }}" placeholder="BY Hand">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Vehicle Number</label>
+              <input name="vehicle_number" class="form-control" value="{{ invoice.vehicle_number|default:'' }}" style="text-transform:uppercase">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Station</label>
+              <input name="station" class="form-control" value="{{ invoice.station|default:'' }}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">E-Way Bill No.</label>
+              <input name="eway_bill_number" class="form-control" value="{{ invoice.eway_bill_number|default:'' }}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">P.O. Number</label>
+              <input name="po_number" class="form-control" value="{{ invoice.po_number|default:'' }}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">P.O. Date</label>
+              <input type="date" name="po_date" class="form-control" value="{{ invoice.po_date|date:'Y-m-d'|default:'' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-16">
+        <div class="card-header mb-16">
+          <span class="card-title">Line Items</span>
+          <button type="button" class="btn btn-sm btn-secondary" @click="addLine()">+ Add Item</button>
+        </div>
+
+        <div class="table-container">
+          <table class="inv-line-table" id="line-items-table">
+            <thead>
+              <tr>
+                <th style="width:28px">#</th>
+                <th style="min-width:220px">Product / Description</th>
+                <th style="width:90px">HSN/SAC</th>
+                <th style="width:80px">Qty</th>
+                <th style="width:70px">Unit</th>
+                <th style="width:110px">Price (Rs)</th>
+                <th style="width:80px">Disc %</th>
+                <th style="width:75px">GST %</th>
+                <th style="width:110px">Amount (Rs)</th>
+                <th style="width:36px"></th>
+              </tr>
+            </thead>
+            <tbody id="line-items-body">
+              <template x-for="(line, index) in lines" :key="line.id">
+                <tr>
+                  <td x-text="index + 1" class="text-muted text-sm text-center"></td>
+
+                  <td>
+                    <div style="position:relative" x-data="{ showProd: false, q: '' }">
+                      <input type="text"
+                             class="form-control"
+                             :placeholder="'Search or type description...'"
+                             x-model="line.name"
+                             @focus="showProd = true"
+                             hx-get="{% url 'invoices_ui:product-search' %}"
+                             hx-trigger="input changed delay:300ms"
+                             :hx-vals="JSON.stringify({ q: line.name })"
+                             :hx-target="'#prod-results-' + line.id"
+                             autocomplete="off"
+                             :name="'lines[' + index + '][name]'">
+                      <div :id="'prod-results-' + line.id" class="search-dropdown" x-show="showProd" @click.outside="showProd = false"></div>
+                    </div>
+                    <input type="text"
+                           class="form-control"
+                           style="margin-top:4px;font-size:11px"
+                           placeholder="Additional description (optional)"
+                           x-model="line.description"
+                           :name="'lines[' + index + '][description]'">
+                    <input type="hidden" :name="'lines[' + index + '][product_id]'" :value="line.product_id">
+                  </td>
+
+                  <td>
+                    <input class="form-control" x-model="line.hsn_code" :name="'lines[' + index + '][hsn_code]'" placeholder="HSN">
+                  </td>
+
+                  <td>
+                    <input type="number" class="form-control" x-model.number="line.quantity" :name="'lines[' + index + '][quantity]'" step="0.001" min="0" @input="calculateLine(index)">
+                  </td>
+
+                  <td>
+                    <input class="form-control" x-model="line.unit" :name="'lines[' + index + '][unit]'" placeholder="Pcs">
+                  </td>
+
+                  <td>
+                    <input type="number" class="form-control" x-model.number="line.unit_price" :name="'lines[' + index + '][unit_price]'" step="0.01" min="0" @input="calculateLine(index)">
+                  </td>
+
+                  <td>
+                    <input type="number" class="form-control" x-model.number="line.discount_percent" :name="'lines[' + index + '][discount_percent]'" step="0.01" min="0" max="100" @input="calculateLine(index)">
+                  </td>
+
+                  <td>
+                    <select class="form-control" x-model.number="line.gst_rate" :name="'lines[' + index + '][gst_rate]'" @change="calculateLine(index)">
+                      <option value="0">0%</option>
+                      <option value="5">5%</option>
+                      <option value="12">12%</option>
+                      <option value="18">18%</option>
+                      <option value="28">28%</option>
+                    </select>
+                    <input type="hidden" :name="'lines[' + index + '][cess_rate]'" :value="line.cess_rate">
+                  </td>
+
+                  <td style="text-align:right">
+                    <div class="font-mono font-bold text-sm" x-text="formatAmount(line.taxable_amount)"></div>
+                    <div class="text-xs text-muted" x-text="'GST: ' + formatAmount(line.tax_amount)"></div>
+                  </td>
+
+                  <td>
+                    <button type="button" class="btn btn-icon btn-danger" style="padding:4px 6px" @click="removeLine(index)" x-show="lines.length > 1">X</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <button type="button" class="btn btn-sm btn-secondary mt-8" @click="addLine()">+ Add Line Item</button>
+      </div>
+
+      <div class="card mb-16">
+        <div class="card-title mb-12">Notes &amp; Terms</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-control" rows="3" placeholder="Notes visible on invoice...">{{ invoice.notes|default:'' }}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Terms &amp; Conditions</label>
+            <textarea name="terms_and_conditions" class="form-control" rows="3">{{ invoice.terms_and_conditions|default:inv_settings.invoice_terms }}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:sticky; top:calc(var(--topbar-height) + 16px)">
+      <div class="card mb-12">
+        <div class="flex-between mb-8">
+          <span class="section-title" style="margin:0">Supply Type</span>
+          <span class="badge" :class="isInterstate ? 'badge-blue' : 'badge-navy'" x-text="isInterstate ? 'Interstate (IGST)' : 'Intrastate (CGST+SGST)'"></span>
+        </div>
+        <div class="text-xs text-muted">
+          Seller: {{ company.state }} ({{ company.state_code }})
+          -> Buyer: <span x-text="customerStateName || 'Not set'"></span>
+          (<span x-text="customerStateCode || '-' "></span>)
+        </div>
+      </div>
+
+      <div class="card mb-12">
+        <div class="card-title mb-12">Tax Calculation</div>
+
+        <div class="tax-lines">
+          <template x-for="line in lines" :key="line.id">
+            <div class="tax-line-row" x-show="line.name && line.quantity > 0">
+              <span class="text-xs text-muted" x-text="(line.name || 'Item').slice(0,20)"></span>
+              <span class="text-xs font-mono" x-text="formatAmount(line.taxable_amount)"></span>
+            </div>
+          </template>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="total-row"><span class="text-sm text-muted">Subtotal</span><span class="font-mono" x-text="formatAmount(totals.subtotal)"></span></div>
+
+        <template x-if="!isInterstate">
+          <div>
+            <div class="total-row"><span class="text-sm text-muted">CGST</span><span class="font-mono" x-text="formatAmount(totals.total_cgst)"></span></div>
+            <div class="total-row"><span class="text-sm text-muted">SGST</span><span class="font-mono" x-text="formatAmount(totals.total_sgst)"></span></div>
+          </div>
+        </template>
+
+        <template x-if="isInterstate">
+          <div class="total-row"><span class="text-sm text-muted">IGST</span><span class="font-mono" x-text="formatAmount(totals.total_igst)"></span></div>
+        </template>
+
+        <div class="total-row"><span class="text-sm text-muted">Round Off</span><span class="font-mono" x-text="formatAmount(totals.round_off)"></span></div>
+
+        <div class="total-grand"><span>Grand Total</span><span class="font-mono" x-text="'Rs ' + formatAmount(totals.grand_total)"></span></div>
+
+        <div class="amount-words" x-text="amountInWords"></div>
+      </div>
+
+      <div class="card">
+        <button type="submit" name="action" value="draft" class="btn btn-secondary w-full mb-8">Save as Draft</button>
+        <button type="submit" name="action" value="issue" class="btn btn-accent w-full">Save &amp; Issue Invoice</button>
+        <div class="text-xs text-muted text-center mt-8">Issuing will deduct stock and update party balance</div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+function invoiceApp() {
+  return {
+    lines: [],
+    isInterstate: false,
+    placeOfSupplyCode: '{{ invoice.place_of_supply_code|default:company.state_code }}',
+    customerStateCode: '{{ invoice.customer_state_code|default:'' }}',
+    customerStateName: '{{ invoice.customer_state|default:''|escapejs }}',
+    customerGSTIN: '{{ invoice.customer_gstin|default:'' }}',
+    amountInWords: '',
+    totals: {
+      subtotal: 0,
+      total_cgst: 0,
+      total_sgst: 0,
+      total_igst: 0,
+      total_cess: 0,
+      total_tax: 0,
+      round_off: 0,
+      grand_total: 0,
+    },
+
+    init() {
+      const existingLines = {{ existing_lines_json|safe|default:'[]' }};
+      if (existingLines.length > 0) {
+        this.lines = existingLines;
+      } else {
+        this.addLine();
+      }
+      this.updateInterstate();
+      this.recalculate();
+    },
+
+    addLine() {
+      this.lines.push({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        product_id: '',
+        name: '',
+        description: '',
+        hsn_code: '',
+        quantity: 1,
+        unit: 'Pcs',
+        unit_price: 0,
+        discount_percent: 0,
+        gst_rate: 18,
+        cess_rate: 0,
+        taxable_amount: 0,
+        tax_amount: 0,
+        line_total: 0,
+      });
+    },
+
+    removeLine(index) {
+      if (this.lines.length > 1) {
+        this.lines.splice(index, 1);
+        this.recalculate();
+      }
+    },
+
+    calculateLine(index) {
+      const line = this.lines[index];
+      const price = parseFloat(line.unit_price) || 0;
+      const qty = parseFloat(line.quantity) || 0;
+      const disc = parseFloat(line.discount_percent) || 0;
+      const gst = parseFloat(line.gst_rate) || 0;
+      const cess = parseFloat(line.cess_rate) || 0;
+
+      const gross = price * qty;
+      const discAmt = gross * disc / 100;
+      const taxable = gross - discAmt;
+
+      let cgst = 0, sgst = 0, igst = 0;
+      if (this.isInterstate) {
+        igst = taxable * gst / 100;
+      } else {
+        cgst = taxable * gst / 2 / 100;
+        sgst = taxable * gst / 2 / 100;
+      }
+      const cessAmt = taxable * cess / 100;
+      const tax = cgst + sgst + igst + cessAmt;
+
+      line.taxable_amount = Math.round(taxable * 100) / 100;
+      line.tax_amount = Math.round(tax * 100) / 100;
+      line.line_total = Math.round((taxable + tax) * 100) / 100;
+
+      this.recalculate();
+    },
+
+    recalculate() {
+      this.lines.forEach((_, i) => {
+        const line = this.lines[i];
+        const price = parseFloat(line.unit_price) || 0;
+        const qty = parseFloat(line.quantity) || 0;
+        const disc = parseFloat(line.discount_percent) || 0;
+        const gst = parseFloat(line.gst_rate) || 0;
+        const cess = parseFloat(line.cess_rate) || 0;
+        const gross = price * qty;
+        const discAmt = gross * disc / 100;
+        const taxable = gross - discAmt;
+        let cgst = 0, sgst = 0, igst = 0;
+        if (this.isInterstate) {
+          igst = taxable * gst / 100;
+        } else {
+          cgst = taxable * gst / 2 / 100;
+          sgst = taxable * gst / 2 / 100;
+        }
+        const cessAmt = taxable * cess / 100;
+        const tax = cgst + sgst + igst + cessAmt;
+        line.taxable_amount = Math.round(taxable * 100) / 100;
+        line.tax_amount = Math.round(tax * 100) / 100;
+        line.line_total = Math.round((taxable + tax) * 100) / 100;
+      });
+
+      const subtotal = this.lines.reduce((s, l) => s + (parseFloat(l.taxable_amount) || 0), 0);
+      const totalTax = this.lines.reduce((s, l) => s + (parseFloat(l.tax_amount) || 0), 0);
+      const rawTotal = subtotal + totalTax;
+      const rounded = Math.round(rawTotal);
+      const roundOff = Math.round((rounded - rawTotal) * 100) / 100;
+      const grandTotal = rounded;
+
+      const cgst = this.isInterstate ? 0 :
+        this.lines.reduce((s, l) => {
+          const taxable = parseFloat(l.taxable_amount) || 0;
+          const gstRate = parseFloat(l.gst_rate) || 0;
+          const t = taxable * (gstRate / 2) / 100;
+          return s + Math.round(t * 100) / 100;
+        }, 0);
+      const sgst = cgst;
+      const igst = !this.isInterstate ? 0 :
+        this.lines.reduce((s, l) => {
+          const taxable = parseFloat(l.taxable_amount) || 0;
+          const gstRate = parseFloat(l.gst_rate) || 0;
+          const t = taxable * gstRate / 100;
+          return s + Math.round(t * 100) / 100;
+        }, 0);
+
+      this.totals = {
+        subtotal: Math.round(subtotal * 100) / 100,
+        total_cgst: Math.round(cgst * 100) / 100,
+        total_sgst: Math.round(sgst * 100) / 100,
+        total_igst: Math.round(igst * 100) / 100,
+        total_cess: 0,
+        total_tax: Math.round(totalTax * 100) / 100,
+        round_off: roundOff,
+        grand_total: grandTotal,
+      };
+
+      this.amountInWords = this.numberToWords(grandTotal);
+    },
+
+    updateInterstate() {
+      const sellerCode = '{{ company.state_code }}';
+      const buyerCode = this.customerStateCode || this.placeOfSupplyCode;
+      this.isInterstate = sellerCode !== buyerCode;
+      this.recalculate();
+    },
+
+    extractCustomerState() {
+      if (this.customerGSTIN && this.customerGSTIN.length >= 2) {
+        this.customerStateCode = this.customerGSTIN.slice(0, 2);
+        this.updateInterstate();
+      }
+    },
+
+    selectCustomer(id, name, gstin, stateCode, stateName, mobile) {
+      document.getElementById('customer-id-input').value = id;
+      this.customerStateCode = stateCode;
+      this.customerStateName = stateName;
+      this.$dispatch('customer-selected', { id, name, gstin, stateCode, stateName, mobile });
+      this.updateInterstate();
+    },
+
+    selectProduct(index, product) {
+      this.lines[index].product_id = product.id;
+      this.lines[index].name = product.name;
+      this.lines[index].hsn_code = product.hsn_code;
+      this.lines[index].unit = product.unit;
+      this.lines[index].unit_price = product.selling_price;
+      this.lines[index].gst_rate = product.gst_rate;
+      this.lines[index].cess_rate = product.cess_rate;
+      this.calculateLine(index);
+    },
+
+    formatAmount(val) {
+      const n = parseFloat(val) || 0;
+      return new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    },
+
+    numberToWords(amount) {
+      const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+      const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+      function inWords(n) {
+        if (n === 0) return '';
+        if (n < 20) return a[n] + ' ';
+        if (n < 100) return b[Math.floor(n / 10)] + ' ' + (n % 10 ? a[n % 10] + ' ' : '');
+        if (n < 1000) return a[Math.floor(n / 100)] + ' Hundred ' + inWords(n % 100);
+        if (n < 100000) return inWords(Math.floor(n / 1000)) + 'Thousand ' + inWords(n % 1000);
+        if (n < 10000000) return inWords(Math.floor(n / 100000)) + 'Lakh ' + inWords(n % 100000);
+        return inWords(Math.floor(n / 10000000)) + 'Crore ' + inWords(n % 10000000);
+      }
+      const n = Math.round(amount);
+      return 'Rupees ' + (inWords(n).trim() || 'Zero') + ' Only';
+    },
+  };
+}
+</script>
+{% endblock %}

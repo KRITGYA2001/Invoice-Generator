@@ -8,7 +8,9 @@
         </svg>
       </button>
     </div>
-    <form method="POST"
+        <form method="POST"
+          enctype="multipart/form-data"
+              hx-encoding="multipart/form-data"
           hx-post="{% if bank %}{% url 'company_ui:bank-edit' bank.id %}{% else %}{% url 'company_ui:bank-create' %}{% endif %}"
           hx-target="#modal-container"
           hx-swap="innerHTML">
@@ -26,12 +28,28 @@
           </div>
           <div class="form-group">
             <label class="form-label">Account Type</label>
-            {% with selected_type=form_data.account_type|default:bank.account_type|default:'current' %}
+            {% if form_data and form_data.account_type %}
+            {% with selected_type=form_data.account_type %}
             <select name="account_type" class="form-control">
               <option value="current" {% if selected_type == 'current' %}selected{% endif %}>Current</option>
               <option value="savings" {% if selected_type == 'savings' %}selected{% endif %}>Savings</option>
             </select>
             {% endwith %}
+            {% elif bank %}
+            {% with selected_type=bank.account_type|default:'current' %}
+            <select name="account_type" class="form-control">
+              <option value="current" {% if selected_type == 'current' %}selected{% endif %}>Current</option>
+              <option value="savings" {% if selected_type == 'savings' %}selected{% endif %}>Savings</option>
+            </select>
+            {% endwith %}
+            {% else %}
+            {% with selected_type='current' %}
+            <select name="account_type" class="form-control">
+              <option value="current" {% if selected_type == 'current' %}selected{% endif %}>Current</option>
+              <option value="savings" {% if selected_type == 'savings' %}selected{% endif %}>Savings</option>
+            </select>
+            {% endwith %}
+            {% endif %}
           </div>
         </div>
         <div class="grid-2 mb-16">
@@ -54,6 +72,24 @@
         <div class="form-group">
           <label class="form-label">Swift Code (for exports)</label>
           <input name="swift_code" class="form-control" value="{% if form_data %}{{ form_data.swift_code }}{% else %}{{ bank.swift_code|default:'' }}{% endif %}">
+        </div>
+        <div class="form-group mt-12" x-data="{ qrPreview: null }">
+          <label class="form-label">UPI QR Code</label>
+          <div class="logo-preview mb-8">
+            {% if bank and bank.qr_code_image %}
+              <img src="{{ bank.qr_code_image.url }}" alt="UPI QR" x-show="!qrPreview">
+            {% else %}
+              <div class="logo-placeholder" x-show="!qrPreview">QR</div>
+            {% endif %}
+            <img x-show="qrPreview" :src="qrPreview" class="logo-preview-img" alt="QR preview">
+          </div>
+          <label class="file-upload-btn" for="id_qr_code_image">Upload QR Image</label>
+          <input id="id_qr_code_image" name="qr_code_image" type="file" accept="image/*" @change="qrPreview = URL.createObjectURL($event.target.files[0])">
+          <span class="form-hint">Optional. Upload an image QR to print on invoices.</span>
+          {% if bank and bank.qr_code_image %}
+            <a href="{{ bank.qr_code_image.url }}" target="_blank" rel="noopener" class="text-sm">View current QR</a>
+          {% endif %}
+          {% if errors.qr_code_image %}<span class="form-error">{{ errors.qr_code_image }}</span>{% endif %}
         </div>
       </div>
       <div class="modal-footer">

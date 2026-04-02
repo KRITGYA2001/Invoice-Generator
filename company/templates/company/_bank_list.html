@@ -48,6 +48,10 @@
             <div>{{ bank.upi_id }}</div>
           </div>
           {% endif %}
+          <div>
+            <div class="text-xs text-muted">QR Code</div>
+            <div>{% if bank.qr_code_image %}Uploaded{% else %}Not uploaded{% endif %}</div>
+          </div>
         </div>
 
         <div class="flex-center gap-8" style="margin-top:12px">

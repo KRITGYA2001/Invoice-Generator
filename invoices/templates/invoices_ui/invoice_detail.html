@@ -1,0 +1,230 @@
+{% extends "base/base.html" %}
+{% load ui_tags invoice_filters %}
+{% block title %}{{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{% url 'invoices_ui:invoice-list' %}">Invoices</a>
+  <span class="breadcrumb-sep">/</span>
+  <span class="breadcrumb-current">{{ invoice.invoice_number }}</span>
+</nav>
+
+<div class="flex-between mb-24">
+  <div>
+    <div class="flex-center gap-12 mb-8">
+      <h1 class="page-heading font-mono">{{ invoice.invoice_number }}</h1>
+      {% if invoice.status == 'ISSUED' %}
+        <span class="badge badge-green" style="font-size:13px;padding:5px 12px">Issued</span>
+      {% elif invoice.status == 'DRAFT' %}
+        <span class="badge badge-amber" style="font-size:13px;padding:5px 12px">Draft</span>
+      {% else %}
+        <span class="badge badge-gray" style="font-size:13px;padding:5px 12px">Cancelled</span>
+      {% endif %}
+    </div>
+    <div class="flex-center gap-16 text-sm text-muted">
+      <span>Date: {{ invoice.invoice_date|date:"d M Y" }}</span>
+      {% if invoice.due_date %}<span>Due: {{ invoice.due_date|date:"d M Y" }}</span>{% endif %}
+      <span>Party: <strong>{{ invoice.customer_name }}</strong></span>
+      {% if invoice.is_interstate %}
+        <span class="badge badge-blue">Interstate</span>
+      {% else %}
+        <span class="badge badge-navy">Intrastate</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="flex-center gap-8">
+    <form method="POST" action="{% url 'invoices_ui:invoice-duplicate' invoice.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-secondary">Duplicate</button>
+    </form>
+
+    <a href="{% url 'invoices_ui:invoice-print' invoice.pk %}" class="btn btn-secondary no-print">Print</a>
+
+    {% if can_edit %}
+      <a href="{% url 'invoices_ui:invoice-edit' invoice.pk %}" class="btn btn-secondary">Edit</a>
+    {% endif %}
+
+    {% if can_issue %}
+      <button type="button" class="btn btn-primary" hx-get="{% url 'invoices_ui:invoice-issue' invoice.pk %}" hx-target="#modal-container" hx-swap="innerHTML">Issue Invoice</button>
+    {% endif %}
+
+    {% if invoice.status == 'ISSUED' %}
+      <div x-data="{ open: false }" style="position:relative">
+        <button @click="open = !open" class="btn btn-accent">Download PDF</button>
+        <div x-show="open" @click.outside="open = false" class="dropdown-menu">
+          <a href="{% url 'invoices_ui:invoice-pdf' invoice.pk %}?copies=1" class="dropdown-item">1 Copy (Original)</a>
+          <a href="{% url 'invoices_ui:invoice-pdf' invoice.pk %}?copies=2" class="dropdown-item">2 Copies</a>
+          <a href="{% url 'invoices_ui:invoice-pdf' invoice.pk %}?copies=3" class="dropdown-item">3 Copies</a>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary" hx-get="{% url 'invoices_ui:invoice-email' invoice.pk %}" hx-target="#modal-container" hx-swap="innerHTML">Send Email</button>
+
+      {% if can_cancel %}
+        <button class="btn btn-danger" hx-get="{% url 'invoices_ui:invoice-cancel' invoice.pk %}" hx-target="#modal-container" hx-swap="innerHTML">Cancel Invoice</button>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="invoice-detail-layout">
+  <div>
+    <div class="card mb-16">
+      <div class="grid-2">
+        <div>
+          <div class="section-title">Bill To</div>
+          <div class="font-bold">{{ invoice.customer_name }}</div>
+          <div class="text-sm text-muted" style="white-space:pre-line">{{ invoice.customer_address }}</div>
+          <div class="text-sm mt-4">
+            {% if invoice.customer_gstin %}GSTIN: {{ invoice.customer_gstin }}{% endif %}
+            {% if invoice.customer_mobile %} | Tel: {{ invoice.customer_mobile }}{% endif %}
+          </div>
+        </div>
+        <div>
+          <div class="section-title">Ship To</div>
+          <div class="font-bold">{{ invoice.shipping_name|default:invoice.customer_name }}</div>
+          <div class="text-sm text-muted" style="white-space:pre-line">{{ invoice.shipping_address|default:invoice.customer_address }}</div>
+        </div>
+      </div>
+    </div>
+
+    {% if invoice.transport_mode or invoice.vehicle_number or invoice.po_number %}
+    <div class="card mb-16">
+      <div class="section-title">Transport &amp; Reference</div>
+      <div class="grid-3">
+        <div><div class="text-muted text-sm">Transport</div><div>{{ invoice.transport_mode|default:'-' }}</div></div>
+        <div><div class="text-muted text-sm">Vehicle</div><div>{{ invoice.vehicle_number|default:'-' }}</div></div>
+        <div><div class="text-muted text-sm">Station</div><div>{{ invoice.station|default:'-' }}</div></div>
+        <div><div class="text-muted text-sm">E-Way Bill</div><div>{{ invoice.eway_bill_number|default:'-' }}</div></div>
+        <div><div class="text-muted text-sm">PO Number</div><div>{{ invoice.po_number|default:'-' }}</div></div>
+        <div><div class="text-muted text-sm">PO Date</div><div>{{ invoice.po_date|date:'d M Y'|default:'-' }}</div></div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-16">
+      <div class="card-title mb-12">Items</div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Description</th>
+              <th>HSN/SAC</th>
+              <th>Qty</th>
+              <th>Unit</th>
+              <th>Price</th>
+              <th>Disc%</th>
+              <th>Taxable</th>
+              {% if not invoice.is_interstate %}
+                <th>CGST</th><th>SGST</th>
+              {% else %}
+                <th>IGST</th>
+              {% endif %}
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in invoice.line_items.all %}
+            <tr>
+              <td>{{ item.sr_no }}</td>
+              <td>
+                <div class="font-bold">{{ item.product_name }}</div>
+                {% if item.description %}<div class="text-xs text-muted">{{ item.description }}</div>{% endif %}
+              </td>
+              <td class="font-mono text-sm">{{ item.hsn_code }}</td>
+              <td class="font-mono">{{ item.quantity|floatformat:"-3" }}</td>
+              <td>{{ item.unit }}</td>
+              <td class="font-mono">{{ item.unit_price|indian_rupee }}</td>
+              <td>{{ item.discount_percent }}%</td>
+              <td class="font-mono">{{ item.taxable_amount|indian_rupee }}</td>
+              {% if not invoice.is_interstate %}
+                <td class="font-mono text-sm">{{ item.cgst_amount|indian_rupee }}<div class="text-xs text-muted">{{ item.cgst_rate }}%</div></td>
+                <td class="font-mono text-sm">{{ item.sgst_amount|indian_rupee }}<div class="text-xs text-muted">{{ item.sgst_rate }}%</div></td>
+              {% else %}
+                <td class="font-mono text-sm">{{ item.igst_amount|indian_rupee }}<div class="text-xs text-muted">{{ item.igst_rate }}%</div></td>
+              {% endif %}
+              <td class="font-mono font-bold">{{ item.line_total|indian_rupee }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="amount-words-display">{{ invoice.amount_in_words }}</div>
+    </div>
+
+    <div class="card mb-16">
+      <div class="card-title mb-12">Tax Rate Breakup</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>GST Rate</th>
+            <th>Taxable Amount</th>
+            {% if not invoice.is_interstate %}
+              <th>CGST</th><th>SGST</th>
+            {% else %}
+              <th>IGST</th>
+            {% endif %}
+            <th>Total Tax</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in gst_breakdown %}
+          <tr>
+            <td><span class="badge badge-blue">{{ row.gst_rate }}%</span></td>
+            <td class="font-mono">{{ row.taxable_amount|indian_rupee }}</td>
+            {% if not invoice.is_interstate %}
+              <td class="font-mono">{{ row.cgst_amount|indian_rupee }}</td>
+              <td class="font-mono">{{ row.sgst_amount|indian_rupee }}</td>
+            {% else %}
+              <td class="font-mono">{{ row.igst_amount|indian_rupee }}</td>
+            {% endif %}
+            <td class="font-mono font-bold">{{ row.total_tax|indian_rupee }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="position:sticky;top:calc(var(--topbar-height) + 16px)">
+    <div class="card mb-12">
+      <div class="card-title mb-12">Invoice Totals</div>
+      <div class="total-row"><span>Subtotal</span><span class="font-mono">{{ invoice.subtotal|indian_rupee }}</span></div>
+      {% if not invoice.is_interstate %}
+        <div class="total-row"><span>CGST</span><span class="font-mono">{{ invoice.total_cgst|indian_rupee }}</span></div>
+        <div class="total-row"><span>SGST</span><span class="font-mono">{{ invoice.total_sgst|indian_rupee }}</span></div>
+      {% else %}
+        <div class="total-row"><span>IGST</span><span class="font-mono">{{ invoice.total_igst|indian_rupee }}</span></div>
+      {% endif %}
+      {% if invoice.total_cess > 0 %}
+        <div class="total-row"><span>Cess</span><span class="font-mono">{{ invoice.total_cess|indian_rupee }}</span></div>
+      {% endif %}
+      {% if invoice.round_off != 0 %}
+        <div class="total-row"><span>Round Off</span><span class="font-mono">{{ invoice.round_off|indian_rupee }}</span></div>
+      {% endif %}
+      <div class="total-grand"><span>Grand Total</span><span class="font-mono">{{ invoice.grand_total|indian_rupee }}</span></div>
+    </div>
+
+    {% if invoice.bank_account_number %}
+    <div class="card mb-12">
+      <div class="section-title">Bank Details</div>
+      <div class="text-sm">{{ invoice.bank_name }}</div>
+      <div class="font-mono text-sm">{{ invoice.bank_account_number }}</div>
+      <div class="text-sm text-muted">IFSC: {{ invoice.bank_ifsc }}</div>
+      {% if invoice.bank_upi_id %}<div class="text-sm">UPI: {{ invoice.bank_upi_id }}</div>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if invoice.status == 'CANCELLED' %}
+    <div class="card" style="border-color:var(--danger)">
+      <div class="section-title" style="color:var(--danger)">Cancellation Details</div>
+      <div class="text-sm">Cancelled: {{ invoice.cancelled_at|date:"d M Y H:i" }}</div>
+      <div class="text-sm mt-8">Reason: {{ invoice.cancellation_reason }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from django.core.exceptions import ObjectDoesNotExist
+
 
 def company_context(request):
     """Expose company context to templates for global UI rendering."""
@@ -10,7 +12,7 @@ def company_context(request):
                 "company": company,
                 "has_company": True,
             }
-        except Exception:
+        except (AttributeError, ObjectDoesNotExist):
             return {
                 "company": None,
                 "has_company": False,

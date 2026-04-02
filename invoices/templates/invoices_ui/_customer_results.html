@@ -1,0 +1,26 @@
+{% if customers %}
+  <div class="search-results-list">
+    {% for c in customers %}
+    <div class="search-result-item"
+         @click="selectCustomer(
+           '{{ c.id }}',
+           '{{ c.display_name|default:c.name|escapejs }}',
+           '{{ c.gstin|escapejs }}',
+           '{{ c.billing_state_code }}',
+           '{{ c.billing_state|escapejs }}',
+           '{{ c.mobile_primary }}'
+         );
+         $dispatch('close-search')"
+         style="cursor:pointer">
+      <div class="font-bold text-sm">{{ c.display_name|default:c.name }}</div>
+      <div class="text-xs text-muted">
+        {{ c.gstin|default:"No GSTIN" }} |
+        {{ c.billing_state }} |
+        {{ c.mobile_primary }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="search-no-results">No parties found. Fill in manually below.</div>
+{% endif %}

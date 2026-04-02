@@ -1,0 +1,28 @@
+<div class="modal-backdrop" x-data @click.self="$el.remove()">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title">Issue Invoice</h3>
+        <p class="text-sm text-muted">{{ invoice.invoice_number }}</p>
+      </div>
+      <button @click="$el.closest('.modal-backdrop').remove()" class="btn btn-icon btn-secondary">X</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="alert alert-warning mb-16">
+        Issue this invoice? This will deduct stock and update party balance.
+      </div>
+      <div class="text-sm text-muted">
+        Once issued, the invoice number becomes official and the record should only be corrected by cancellation or duplication.
+      </div>
+    </div>
+
+    <form hx-post="{% url 'invoices_ui:invoice-issue' invoice.pk %}" hx-target="body" hx-swap="none">
+      {% csrf_token %}
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" @click="$el.closest('.modal-backdrop').remove()">Keep Draft</button>
+        <button type="submit" class="btn btn-primary">Issue Invoice</button>
+      </div>
+    </form>
+  </div>
+</div>

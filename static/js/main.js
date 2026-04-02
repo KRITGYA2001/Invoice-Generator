@@ -9,6 +9,9 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.body.addEventListener("htmx:confirm", (e) => {
+  if (!e.detail || !e.detail.question) {
+    return;
+  }
   if (!confirm(e.detail.question)) {
     e.preventDefault();
   }

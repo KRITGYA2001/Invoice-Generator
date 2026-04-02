@@ -44,6 +44,18 @@ class User(AbstractBaseUser, PermissionsMixin):
 	phone = models.CharField(max_length=20, blank=True)
 	is_active = models.BooleanField(default=True)
 	is_staff = models.BooleanField(default=False)
+	groups = models.ManyToManyField(
+		"auth.Group",
+		related_name="accounts_user_set",
+		related_query_name="accounts_user",
+		blank=True,
+	)
+	user_permissions = models.ManyToManyField(
+		"auth.Permission",
+		related_name="accounts_user_set",
+		related_query_name="accounts_user",
+		blank=True,
+	)
 	date_joined = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 

@@ -1,0 +1,24 @@
+{% load ui_tags %}
+{% if notes %}
+  <div class="note-list">
+    {% for note in notes %}
+    <div class="note-item">
+      <div class="flex-between mb-4">
+        <div class="flex-center gap-6">
+          <div class="avatar avatar-sm" style="width:24px;height:24px;font-size:10px">{{ note.created_by.get_full_name|first|default:"?" }}</div>
+          <span class="text-xs font-bold">{{ note.created_by.get_full_name|default:note.created_by.email }}</span>
+          <span class="text-xs text-muted">{{ note.created_at|timesince }} ago</span>
+        </div>
+        {% if note.created_by == request.user %}
+        <button class="btn btn-icon" style="padding:2px 4px;color:var(--gray-400)" hx-post="{% url 'customers_ui:note-delete' customer.pk note.pk %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' hx-confirm="Delete this note?" hx-target="#notes-list" hx-swap="innerHTML">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+        </button>
+        {% endif %}
+      </div>
+      <div class="note-text">{{ note.note }}</div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state" style="padding:16px"><div class="text-sm text-muted">No notes yet</div></div>
+{% endif %}

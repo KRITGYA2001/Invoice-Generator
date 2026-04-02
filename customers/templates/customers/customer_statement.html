@@ -1,0 +1,137 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+{% block title %}Statement - {{ customer.display_name|default:customer.name }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{% url 'customers_ui:customer-list' %}">Parties</a>
+  <span class="breadcrumb-sep">/</span>
+  <a href="{% url 'customers_ui:customer-detail' customer.pk %}">{{ customer.display_name|default:customer.name }}</a>
+  <span class="breadcrumb-sep">/</span>
+  <span class="breadcrumb-current">Statement</span>
+</nav>
+
+<div class="flex-between mb-24">
+  <div>
+    <h1 class="page-heading">Account Statement</h1>
+    <p class="text-muted text-sm">{{ customer.display_name|default:customer.name }} · {{ customer.gstin|default:"No GSTIN" }}</p>
+  </div>
+  <div class="flex-center gap-8">
+    <button onclick="window.print()" class="btn btn-secondary">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5h10.5m-10.5 9h10.5m-12 3h13.5A2.25 2.25 0 0 0 21 17.25v-3A2.25 2.25 0 0 0 18.75 12H5.25A2.25 2.25 0 0 0 3 14.25v3A2.25 2.25 0 0 0 5.25 19.5Zm13.5-7.5V5.25A2.25 2.25 0 0 0 16.5 3h-9A2.25 2.25 0 0 0 5.25 5.25V12"/></svg>
+      Print Statement
+    </button>
+    <a href="{{ request.path }}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&export=pdf" class="btn btn-secondary">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V3m0 0-4.5 4.5M12 3l4.5 4.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5"/></svg>
+      Export PDF
+    </a>
+  </div>
+</div>
+
+<div class="card mb-16 no-print">
+  <form method="GET" class="filter-row">
+    <div class="form-group">
+      <label class="form-label">From Date</label>
+      <input type="date" name="date_from" class="form-control" value="{{ date_from|date:'Y-m-d' }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">To Date</label>
+      <input type="date" name="date_to" class="form-control" value="{{ date_to|date:'Y-m-d' }}">
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-top:21px">Apply</button>
+    <div class="flex-center gap-8" style="margin-top:21px">
+      <a href="?range=this_month" class="btn btn-sm btn-secondary">This Month</a>
+      <a href="?range=this_fy" class="btn btn-sm btn-secondary">This FY</a>
+      <a href="?range=last_fy" class="btn btn-sm btn-secondary">Last FY</a>
+    </div>
+  </form>
+</div>
+
+<div class="card mb-16">
+  <div class="statement-header-grid">
+    <div>
+      <div class="text-xs text-muted mb-4">From</div>
+      <div class="font-bold">{{ company.company_name }}</div>
+      <div class="text-sm">{{ company.gstin }}</div>
+      <div class="text-sm text-muted">{{ company.address_line1 }}, {{ company.city }}</div>
+    </div>
+
+    <div>
+      <div class="text-xs text-muted mb-4">To</div>
+      <div class="font-bold">{{ customer.display_name|default:customer.name }}</div>
+      <div class="text-sm">{{ customer.gstin|default:"No GSTIN" }}</div>
+      <div class="text-sm text-muted">{{ customer.billing_city }}, {{ customer.billing_state }}</div>
+    </div>
+
+    <div style="text-align:right">
+      <div class="text-xs text-muted mb-4">Period</div>
+      <div class="text-sm">{{ date_from|date:"d M Y" }} - {{ date_to|date:"d M Y" }}</div>
+      <div class="mt-8">
+        <div class="text-xs text-muted">Closing Balance</div>
+        <div class="font-mono font-bold" style="font-size:20px;color:{% if statement.closing_balance > 0 %}var(--warning){% else %}var(--success){% endif %}">
+          {{ statement.closing_balance|indian_rupee }}
+        </div>
+        <div class="text-xs text-muted">
+          {% if statement.closing_balance > 0 %}
+            Party owes you
+          {% elif statement.closing_balance < 0 %}
+            You owe party
+          {% else %}
+            Settled
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Invoice No.</th>
+          <th>Description</th>
+          <th style="text-align:right">Amount ({{ company.currency_symbol|default:'₹' }})</th>
+          <th style="text-align:right">Running Balance ({{ company.currency_symbol|default:'₹' }})</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:var(--gray-50)">
+          <td colspan="3" class="font-bold text-sm">Opening Balance</td>
+          <td style="text-align:right">-</td>
+          <td class="font-mono font-bold" style="text-align:right">{{ statement.opening_balance|indian_rupee }}</td>
+        </tr>
+
+        {% for tx in statement.transactions %}
+        <tr>
+          <td class="text-sm">{{ tx.date|date:"d M Y" }}</td>
+          <td><span class="font-mono">{{ tx.invoice_no }}</span></td>
+          <td class="text-sm text-muted">Invoice raised</td>
+          <td class="font-mono" style="text-align:right">{{ tx.amount|indian_rupee }}</td>
+          <td class="font-mono font-bold" style="text-align:right;color:{% if tx.balance > 0 %}var(--warning){% else %}var(--success){% endif %}">{{ tx.balance|indian_rupee }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted" style="padding:24px">No transactions in this period</td></tr>
+        {% endfor %}
+
+        <tr style="background:var(--gray-50)">
+          <td colspan="3" class="font-bold">Closing Balance</td>
+          <td>-</td>
+          <td class="font-mono font-bold" style="text-align:right;font-size:15px;color:{% if statement.closing_balance > 0 %}var(--warning){% else %}var(--success){% endif %}">{{ statement.closing_balance|indian_rupee }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+@media print {
+  .sidebar, .topbar, .filter-row, .btn, .breadcrumb, .no-print { display: none !important; }
+  .main-content { padding: 0; }
+  .card { box-shadow: none; border: 1px solid #ccc; }
+  body { font-size: 12px; }
+}
+</style>
+{% endblock %}

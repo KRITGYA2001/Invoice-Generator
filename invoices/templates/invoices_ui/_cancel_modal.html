@@ -1,0 +1,35 @@
+<div class="modal-backdrop" x-data @click.self="$el.remove()">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title text-danger">Cancel Invoice</h3>
+        <p class="text-sm text-muted">{{ invoice.invoice_number }}</p>
+      </div>
+      <button @click="$el.closest('.modal-backdrop').remove()" class="btn btn-icon btn-secondary">X</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="alert alert-warning mb-16">
+        Warning: Cancelling will reverse all stock deductions and update the party balance.
+        This action cannot be undone.
+      </div>
+      {% if error_message %}
+        <div class="alert alert-danger mb-16">{{ error_message }}</div>
+      {% endif %}
+    </div>
+
+    <form hx-post="{% url 'invoices_ui:invoice-cancel' invoice.pk %}" hx-target="body" hx-swap="none">
+      {% csrf_token %}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label required">Reason for Cancellation</label>
+          <textarea name="cancellation_reason" class="form-control" rows="3" required minlength="10" placeholder="Minimum 10 characters..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" @click="$el.closest('.modal-backdrop').remove()">Keep Invoice</button>
+        <button type="submit" class="btn btn-danger">Cancel Invoice</button>
+      </div>
+    </form>
+  </div>
+</div>

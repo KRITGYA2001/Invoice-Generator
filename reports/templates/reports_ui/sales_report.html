@@ -1,0 +1,150 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load ui_tags %}
+
+{% block title %}Sales Reports{% endblock %}
+
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+  <div class="page-shell report-shell" id="report-results">
+    <div class="page-header report-header">
+      <div>
+        <div class="eyebrow">Sales</div>
+        <h1 class="page-title">Sales reports</h1>
+        <p class="page-subtitle">Period {{ period_label }}</p>
+      </div>
+      <div class="report-actions no-print">
+        <a class="btn btn-secondary" href="{% url 'reports_ui:sales-by-customer' %}">Customers</a>
+        <a class="btn btn-secondary" href="{% url 'reports_ui:sales-by-product' %}">Products</a>
+        <a class="btn btn-secondary" href="{% url 'reports_ui:sales-daily' %}">Daily</a>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <form class="card report-toolbar no-print" method="get" action="" hx-get="" hx-target="#report-results" hx-select="#report-results" hx-push-url="true">
+      <div class="filter-grid">
+        <div class="filter-group"><label class="form-label">Range</label><select class="form-control" name="range">{% for value, label in date_range_options %}<option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="filter-group"><label class="form-label">From</label><input class="form-control" type="date" name="date_from" value="{{ date_from_str }}"></div>
+        <div class="filter-group"><label class="form-label">To</label><input class="form-control" type="date" name="date_to" value="{{ date_to_str }}"></div>
+        <div class="filter-group"><label class="form-label">Financial year</label><input class="form-control" type="text" name="financial_year" value="{{ financial_year }}"></div>
+        <div class="filter-group"><label class="form-label">&nbsp;</label><button class="btn btn-primary" type="submit">Apply</button></div>
+      </div>
+    </form>
+
+    <section class="metric-grid">
+      <article class="stat-card"><div class="stat-label">Customer revenue</div><div class="stat-value">{{ sales_by_customer.total_revenue|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">Products revenue</div><div class="stat-value">{{ sales_by_product.total_revenue|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">Category rows</div><div class="stat-value">{{ sales_by_category.categories|length }}</div></article>
+      <article class="stat-card"><div class="stat-label">Daily points</div><div class="stat-value">{{ daily_sales.daily|length }}</div></article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="card chart-card chart-card-wide">
+        <div class="card-header"><div><div class="card-kicker">Trend</div><h2 class="card-title">Daily revenue trend</h2></div></div>
+        <div class="chart-panel"><canvas id="salesDailyChart" height="120"></canvas></div>
+      </article>
+      <article class="card">
+        <div class="card-header"><div><div class="card-kicker">Mix</div><h2 class="card-title">Customer revenue mix</h2></div></div>
+        <div class="chart-panel chart-panel-sm"><canvas id="salesCustomerChart" height="180"></canvas></div>
+      </article>
+    </section>
+
+    <section class="report-grid-2">
+      <article class="card">
+        <div class="card-header"><div><div class="card-kicker">Products</div><h2 class="card-title">Top products by revenue</h2></div></div>
+        <div class="table-wrap">
+          <table class="report-table">
+            <thead><tr><th>Product</th><th>HSN</th><th class="align-right">Qty</th><th class="align-right">Taxable</th><th class="align-right">Tax</th><th class="align-right">Revenue</th></tr></thead>
+            <tbody>
+              {% for row in sales_by_product.products %}
+                <tr>
+                  <td>{{ row.product_name }}</td>
+                  <td>{{ row.hsn_code|default:"-" }}</td>
+                  <td class="align-right">{{ row.total_quantity }}</td>
+                  <td class="align-right">{{ row.taxable_amount|indian_rupee }}</td>
+                  <td class="align-right">{{ row.total_tax|indian_rupee }}</td>
+                  <td class="align-right">{{ row.line_total|indian_rupee }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="6" class="table-empty">No product sales found.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-header"><div><div class="card-kicker">Categories</div><h2 class="card-title">Sales by category</h2></div></div>
+        <div class="table-wrap">
+          <table class="report-table">
+            <thead><tr><th>Category</th><th>Products</th><th>Invoices</th><th class="align-right">Taxable</th><th class="align-right">Share</th></tr></thead>
+            <tbody>
+              {% for row in sales_by_category.categories %}
+                <tr>
+                  <td>{{ row.category_name }}</td>
+                  <td>{{ row.product_count }}</td>
+                  <td>{{ row.invoice_count }}</td>
+                  <td class="align-right">{{ row.taxable_amount|indian_rupee }}</td>
+                  <td class="align-right">{{ row.percentage }}%</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="table-empty">No category sales found.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><div><div class="card-kicker">Customers</div><h2 class="card-title">Top customers by revenue</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead><tr><th>Customer</th><th>GSTIN</th><th>Invoices</th><th class="align-right">Taxable</th><th class="align-right">Tax</th><th class="align-right">Revenue</th><th class="align-right">Share</th></tr></thead>
+          <tbody>
+            {% for row in sales_by_customer.customers %}
+              <tr>
+                <td>{{ row.customer_name }}</td>
+                <td>{{ row.customer_gstin|default:"-" }}</td>
+                <td>{{ row.invoice_count }}</td>
+                <td class="align-right">{{ row.taxable_amount|indian_rupee }}</td>
+                <td class="align-right">{{ row.total_tax|indian_rupee }}</td>
+                <td class="align-right">{{ row.grand_total|indian_rupee }}</td>
+                <td class="align-right">{{ row.percentage }}%</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7" class="table-empty">No customer sales found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/charts.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      window.buildLineChart('salesDailyChart', {{ daily_labels|safe }}, [{
+        label: 'Revenue',
+        data: {{ daily_revenue|safe }},
+        borderColor: '#1a3a5c',
+        backgroundColor: 'rgba(26,58,92,0.15)',
+        tension: 0.25,
+        fill: true,
+      }], {
+        scales: {
+          y: {
+            ticks: {
+              callback: (value) => window.formatIndian(value),
+            },
+          },
+        },
+      });
+      window.buildDoughnutChart('salesCustomerChart', {{ sales_customer_labels|safe }}, {{ sales_customer_values|safe }}, ['#1a3a5c', '#2d5986', '#c8832a', '#16a34a', '#2563eb']);
+    });
+  </script>
+{% endblock %}

@@ -42,7 +42,7 @@ class LoginView(View):
     def get(self, request: HttpRequest) -> HttpResponse:
         if request.user.is_authenticated:
             return redirect("/")
-        return render(request, self.template_name, {"form_email": ""})
+        return render(request, self.template_name, {"form_email": "", "next_url": request.GET.get("next", "")})
 
     def post(self, request: HttpRequest) -> HttpResponse:
         if request.user.is_authenticated:
@@ -51,19 +51,23 @@ class LoginView(View):
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
         remember_me = request.POST.get("remember_me") == "on"
-
+        next_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
         user = authenticate(request, username=email, password=password)
 
         if not user or not user.is_active:
             messages.error(request, "Invalid email or password")
-            return render(request, self.template_name, {"form_email": email}, status=400)
+            return render(
+                request,
+                self.template_name,
+                {
+                    "form_email": email,
+                    "next_url": next_url,
+                },
+                status=400,
+            )
 
         login(request, user)
         request.session.set_expiry(1209600 if remember_me else 0)
-
-        next_url = request.GET.get("next")
-        if not hasattr(user, "company_profile"):
-            return redirect(_company_onboarding_url())
         return redirect(next_url or "/")
 
 

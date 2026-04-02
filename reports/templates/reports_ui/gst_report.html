@@ -1,0 +1,152 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load ui_tags %}
+
+{% block title %}GST Reports{% endblock %}
+
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+  <div class="page-shell report-shell" id="report-results">
+    <div class="page-header report-header">
+      <div>
+        <div class="eyebrow">GST</div>
+        <h1 class="page-title">GST reports</h1>
+        <p class="page-subtitle">Period {{ period_label }}</p>
+      </div>
+      <div class="report-actions no-print">
+        <a class="btn btn-secondary" href="{% url 'reports_ui:gst-gstr1' %}">GSTR-1</a>
+        <a class="btn btn-secondary" href="{% url 'reports_ui:gst-hsn' %}">HSN summary</a>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <form class="card report-toolbar no-print" method="get" action="" hx-get="" hx-target="#report-results" hx-select="#report-results" hx-push-url="true">
+      <div class="filter-grid">
+        <div class="filter-group">
+          <label class="form-label">Range</label>
+          <select class="form-control" name="range">
+            {% for value, label in date_range_options %}
+              <option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="form-label">From</label>
+          <input class="form-control" type="date" name="date_from" value="{{ date_from_str }}">
+        </div>
+        <div class="filter-group">
+          <label class="form-label">To</label>
+          <input class="form-control" type="date" name="date_to" value="{{ date_to_str }}">
+        </div>
+        <div class="filter-group">
+          <label class="form-label">Financial year</label>
+          <input class="form-control" type="text" name="financial_year" value="{{ financial_year }}" placeholder="25-26">
+        </div>
+        <div class="filter-group">
+          <label class="form-label">&nbsp;</label>
+          <button class="btn btn-primary" type="submit">Apply</button>
+        </div>
+      </div>
+    </form>
+
+    <section class="metric-grid">
+      <article class="stat-card"><div class="stat-label">Invoices</div><div class="stat-value">{{ gst_summary.summary.total_invoices }}</div><div class="stat-sub">Issued in selected period</div></article>
+      <article class="stat-card"><div class="stat-label">Taxable value</div><div class="stat-value">{{ gst_summary.summary.total_taxable|indian_rupee }}</div><div class="stat-sub">Supply value before tax</div></article>
+      <article class="stat-card"><div class="stat-label">Total tax</div><div class="stat-value">{{ gst_summary.summary.total_tax|indian_rupee }}</div><div class="stat-sub">CGST + SGST + IGST + CESS</div></article>
+      <article class="stat-card"><div class="stat-label">Grand total</div><div class="stat-value">{{ gst_summary.summary.grand_total|indian_rupee }}</div><div class="stat-sub">Billed value including tax</div></article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="card chart-card chart-card-wide">
+        <div class="card-header">
+          <div><div class="card-kicker">GST Rates</div><h2 class="card-title">Rate wise tax and taxable value</h2></div>
+        </div>
+        <div class="chart-panel"><canvas id="gstRateChart" height="120"></canvas></div>
+      </article>
+      <article class="card">
+        <div class="card-header"><div><div class="card-kicker">GST Split</div><h2 class="card-title">Intrastate vs interstate</h2></div></div>
+        <div class="chart-panel chart-panel-sm"><canvas id="gstSplitChart" height="180"></canvas></div>
+      </article>
+    </section>
+
+    <section class="report-grid-2">
+      <article class="card">
+        <div class="card-header"><div><div class="card-kicker">Interstate</div><h2 class="card-title">Interstate summary</h2></div></div>
+        <div class="stack-list">
+          <div class="stack-item"><div class="stack-title">Invoices</div><div class="stack-value">{{ gst_summary.interstate_summary.invoice_count }}</div></div>
+          <div class="stack-item"><div class="stack-title">Taxable amount</div><div class="stack-value">{{ gst_summary.interstate_summary.taxable_amount|indian_rupee }}</div></div>
+          <div class="stack-item"><div class="stack-title">IGST</div><div class="stack-value">{{ gst_summary.interstate_summary.igst|indian_rupee }}</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-header"><div><div class="card-kicker">Intrastate</div><h2 class="card-title">Intrastate summary</h2></div></div>
+        <div class="stack-list">
+          <div class="stack-item"><div class="stack-title">Invoices</div><div class="stack-value">{{ gst_summary.intrastate_summary.invoice_count }}</div></div>
+          <div class="stack-item"><div class="stack-title">Taxable amount</div><div class="stack-value">{{ gst_summary.intrastate_summary.taxable_amount|indian_rupee }}</div></div>
+          <div class="stack-item"><div class="stack-title">CGST / SGST</div><div class="stack-value">{{ gst_summary.intrastate_summary.cgst|indian_rupee }} / {{ gst_summary.intrastate_summary.sgst|indian_rupee }}</div></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><div><div class="card-kicker">Rate Table</div><h2 class="card-title">GST rate wise summary</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Rate</th>
+              <th>Invoices</th>
+              <th class="align-right">Taxable</th>
+              <th class="align-right">CGST</th>
+              <th class="align-right">SGST</th>
+              <th class="align-right">IGST</th>
+              <th class="align-right">Tax</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in gst_summary.rate_wise_summary %}
+              <tr>
+                <td>{{ row.gst_rate }}%</td>
+                <td>{{ row.invoice_count }}</td>
+                <td class="align-right">{{ row.taxable_amount|indian_rupee }}</td>
+                <td class="align-right">{{ row.cgst_amount|indian_rupee }}</td>
+                <td class="align-right">{{ row.sgst_amount|indian_rupee }}</td>
+                <td class="align-right">{{ row.igst_amount|indian_rupee }}</td>
+                <td class="align-right">{{ row.total_tax|indian_rupee }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7" class="table-empty">No GST data available.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><div><div class="card-kicker">Reverse Charge</div><h2 class="card-title">Reverse charge summary</h2></div></div>
+      <div class="report-grid-3">
+        <article class="stat-card"><div class="stat-label">Invoices</div><div class="stat-value">{{ gst_summary.reverse_charge_summary.invoice_count }}</div></article>
+        <article class="stat-card"><div class="stat-label">Taxable amount</div><div class="stat-value">{{ gst_summary.reverse_charge_summary.taxable_amount|indian_rupee }}</div></article>
+        <article class="stat-card"><div class="stat-label">Tax</div><div class="stat-value">{{ gst_summary.reverse_charge_summary.total_tax|indian_rupee }}</div></article>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/charts.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      window.buildBarChart('gstRateChart', {{ gst_rate_labels|safe }}, {{ gst_rate_tax|safe }}, 'Tax', ['#1a3a5c']);
+      window.buildDoughnutChart(
+        'gstSplitChart',
+        ['Interstate', 'Intrastate'],
+        {{ gst_split_values|safe }},
+        ['#1a3a5c', '#c8832a']
+      );
+    });
+  </script>
+{% endblock %}

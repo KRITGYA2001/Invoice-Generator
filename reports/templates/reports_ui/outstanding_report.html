@@ -1,0 +1,51 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+
+{% block title %}Outstanding Reports{% endblock %}
+
+{% block content %}
+  <div class="page-shell report-shell" id="report-results">
+    <div class="page-header report-header">
+      <div>
+        <div class="eyebrow">Receivables</div>
+        <h1 class="page-title">Outstanding report</h1>
+        <p class="page-subtitle">Receivables snapshot as of {{ generated_at|default:outstanding_report.generated_at|slice:":10" }}</p>
+      </div>
+      <div class="report-actions no-print">
+        <a class="btn btn-secondary" href="{% url 'reports_ui:outstanding-ageing' %}">Ageing report</a>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <section class="metric-grid">
+      <article class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-value">{{ outstanding_report.summary.total_outstanding|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">Customers</div><div class="stat-value">{{ outstanding_report.summary.customer_count }}</div></article>
+      <article class="stat-card"><div class="stat-label">Over limit</div><div class="stat-value">{{ outstanding_report.summary.over_credit_limit }}</div></article>
+      <article class="stat-card"><div class="stat-label">Status</div><div class="stat-value">Open</div></article>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><div><div class="card-kicker">Customers</div><h2 class="card-title">Customers with outstanding balances</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead><tr><th>Customer</th><th>GSTIN</th><th>Mobile</th><th class="align-right">Credit limit</th><th class="align-right">Balance</th><th class="align-right">Over limit</th><th class="align-right">Amount over</th></tr></thead>
+          <tbody>
+            {% for row in outstanding_report.customers %}
+              <tr>
+                <td>{{ row.name }}</td>
+                <td>{{ row.gstin|default:"-" }}</td>
+                <td>{{ row.mobile|default:"-" }}</td>
+                <td class="align-right">{{ row.credit_limit|indian_rupee }}</td>
+                <td class="align-right">{{ row.current_balance|indian_rupee }}</td>
+                <td class="align-right">{% if row.over_limit %}Yes{% else %}No{% endif %}</td>
+                <td class="align-right">{{ row.over_limit_by|indian_rupee }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7" class="table-empty">No outstanding balances found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}

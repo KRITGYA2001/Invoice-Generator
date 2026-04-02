@@ -1,0 +1,35 @@
+{% if products %}
+  <div class="search-results-list">
+    {% for p in products %}
+    <div class="search-result-item"
+         @click="selectProduct($el.closest('tr') ?
+           [...document.querySelectorAll('#line-items-body tr')].indexOf($el.closest('tr'))
+           : 0,
+           {
+             id: '{{ p.id }}',
+             name: '{{ p.name|escapejs }}',
+             hsn_code: '{{ p.hsn_code }}',
+             unit: '{{ p.unit.short_name|default:'Pcs' }}',
+             selling_price: {{ p.selling_price }},
+             gst_rate: {{ p.gst_rate }},
+             cess_rate: {{ p.cess_rate }},
+           });
+           $el.closest('.search-dropdown').style.display='none'"
+         style="cursor:pointer">
+      <div class="font-bold text-sm">{{ p.name }}</div>
+      <div class="text-xs text-muted">
+        HSN: {{ p.hsn_code }} |
+        {{ p.unit.short_name }} |
+        Rs {{ p.selling_price }} |
+        GST {{ p.gst_rate }}%
+        {% if p.track_inventory %}
+          | Stock: {{ p.current_stock }}
+          {% if p.is_low_stock %} !{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="search-no-results">No products found</div>
+{% endif %}

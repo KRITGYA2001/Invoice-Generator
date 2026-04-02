@@ -4,8 +4,9 @@
 {% block auth_subtitle %}Sign in to your account{% endblock %}
 
 {% block auth_content %}
-<form method="POST" x-data="{ loading: false }" novalidate>
+<form method="POST" x-data="{ loading: false }" @submit="loading = true" novalidate>
   {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next_url|default:'' }}">
 
   <div class="form-group mb-16">
     <label class="form-label required" for="id_email">Email</label>
@@ -47,7 +48,7 @@
     <label for="id_remember_me" class="text-sm text-muted">Remember me</label>
   </div>
 
-  <button class="btn btn-primary btn-lg w-full" type="submit" @click="loading = true" :disabled="loading">
+  <button class="btn btn-primary btn-lg w-full" type="submit" :disabled="loading">
     <span x-show="!loading">Sign In</span>
     <span x-show="loading" class="flex-center gap-8">
       <span class="spinner"></span>

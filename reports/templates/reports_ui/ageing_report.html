@@ -1,0 +1,82 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load ui_tags %}
+
+{% block title %}Ageing Report{% endblock %}
+
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+  <div class="page-shell report-shell" id="report-results">
+    <div class="page-header report-header">
+      <div>
+        <div class="eyebrow">Receivables</div>
+        <h1 class="page-title">Ageing report</h1>
+        <p class="page-subtitle">As of {{ ageing_report.as_of_date }}</p>
+      </div>
+      <div class="report-actions no-print">
+        <a class="btn btn-secondary" href="{% url 'reports_ui:outstanding-report' %}">Back to outstanding</a>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <section class="metric-grid">
+      <article class="stat-card"><div class="stat-label">Current</div><div class="stat-value">{{ ageing_report.buckets.not_due.amount|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">0-30 days</div><div class="stat-value">{{ ageing_report.buckets.days_0_30.amount|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">31-60 days</div><div class="stat-value">{{ ageing_report.buckets.days_31_60.amount|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">90+ days</div><div class="stat-value">{{ ageing_report.buckets.days_90_plus.amount|indian_rupee }}</div></article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="card chart-card chart-card-wide">
+        <div class="card-header"><div><div class="card-kicker">Ageing</div><h2 class="card-title">Outstanding balance by age bucket</h2></div></div>
+        <div class="chart-panel"><canvas id="ageingChart" height="120"></canvas></div>
+      </article>
+      <article class="card">
+        <div class="card-header"><div><div class="card-kicker">Buckets</div><h2 class="card-title">Summary counts</h2></div></div>
+        <div class="stack-list">
+          <div class="stack-item"><div><div class="stack-title">Current</div><div class="stack-meta">{{ ageing_report.buckets.not_due.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.not_due.amount|indian_rupee }}</div></div>
+          <div class="stack-item"><div><div class="stack-title">0-30 days</div><div class="stack-meta">{{ ageing_report.buckets.days_0_30.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.days_0_30.amount|indian_rupee }}</div></div>
+          <div class="stack-item"><div><div class="stack-title">31-60 days</div><div class="stack-meta">{{ ageing_report.buckets.days_31_60.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.days_31_60.amount|indian_rupee }}</div></div>
+          <div class="stack-item"><div><div class="stack-title">61-90 days</div><div class="stack-meta">{{ ageing_report.buckets.days_61_90.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.days_61_90.amount|indian_rupee }}</div></div>
+          <div class="stack-item"><div><div class="stack-title">90+ days</div><div class="stack-meta">{{ ageing_report.buckets.days_90_plus.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.days_90_plus.amount|indian_rupee }}</div></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="card mt-16">
+      <div class="card-header"><div><div class="card-kicker">Invoices</div><h2 class="card-title">Overdue invoices</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead><tr><th>Invoice</th><th>Customer</th><th>Invoice date</th><th>Due date</th><th class="align-right">Days overdue</th><th class="align-right">Amount</th><th>Bucket</th></tr></thead>
+          <tbody>
+            {% for row in ageing_report.invoices %}
+              <tr>
+                <td>{{ row.invoice_number }}</td>
+                <td>{{ row.customer_name }}</td>
+                <td>{{ row.invoice_date }}</td>
+                <td>{{ row.due_date }}</td>
+                <td class="align-right">{{ row.days_overdue }}</td>
+                <td class="align-right">{{ row.grand_total|indian_rupee }}</td>
+                <td>{{ row.bucket }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7" class="table-empty">No overdue invoices found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/charts.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      window.buildDoughnutChart('ageingChart', {{ ageing_labels|safe }}, {{ ageing_values|safe }}, ['#16a34a', '#2563eb', '#c8832a', '#d97706', '#dc2626']);
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+
+{% block title %}Sales by Product{% endblock %}
+
+{% block content %}
+  <div class="page-shell report-shell" id="report-results">
+    <div class="page-header report-header">
+      <div>
+        <div class="eyebrow">Sales</div>
+        <h1 class="page-title">Sales by product</h1>
+        <p class="page-subtitle">Period {{ period_label }}</p>
+      </div>
+      <div class="report-actions no-print">
+        <a class="btn btn-secondary" href="{% url 'reports_ui:sales-report' %}">Back to sales reports</a>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <section class="metric-grid">
+      <article class="stat-card"><div class="stat-label">Revenue</div><div class="stat-value">{{ sales_by_product.total_revenue|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">Products</div><div class="stat-value">{{ sales_by_product.products|length }}</div></article>
+      <article class="stat-card"><div class="stat-label">From</div><div class="stat-value">{{ sales_by_product.period.date_from }}</div></article>
+      <article class="stat-card"><div class="stat-label">To</div><div class="stat-value">{{ sales_by_product.period.date_to }}</div></article>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><div><div class="card-kicker">Products</div><h2 class="card-title">Top products by revenue</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead><tr><th>Product</th><th>HSN</th><th>Unit</th><th>Invoices</th><th class="align-right">Qty</th><th class="align-right">Taxable</th><th class="align-right">Tax</th><th class="align-right">Revenue</th><th class="align-right">Share</th></tr></thead>
+          <tbody>
+            {% for row in sales_by_product.products %}
+              <tr>
+                <td>{{ row.product_name }}</td>
+                <td>{{ row.hsn_code|default:"-" }}</td>
+                <td>{{ row.unit|default:"-" }}</td>
+                <td>{{ row.invoice_count }}</td>
+                <td class="align-right">{{ row.total_quantity }}</td>
+                <td class="align-right">{{ row.taxable_amount|indian_rupee }}</td>
+                <td class="align-right">{{ row.total_tax|indian_rupee }}</td>
+                <td class="align-right">{{ row.line_total|indian_rupee }}</td>
+                <td class="align-right">{{ row.percentage }}%</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="9" class="table-empty">No product sales found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}

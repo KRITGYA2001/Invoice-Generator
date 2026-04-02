@@ -1,0 +1,90 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+{% block title %}Parties{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-24">
+  <div>
+    <h1 class="page-heading">Parties</h1>
+    <p class="text-muted text-sm">
+      {{ summary.total_customers }} parties ·
+      {{ summary.total_outstanding|indian_rupee }} outstanding
+    </p>
+  </div>
+  <a href="{% url 'customers_ui:customer-create' %}" class="btn btn-primary">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+    Add Party
+  </a>
+</div>
+
+<div class="grid-4 mb-24">
+  <div class="stat-card">
+    <div class="stat-label">Total Parties</div>
+    <div class="stat-value">{{ summary.total_customers }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Active Parties</div>
+    <div class="stat-value">{{ summary.active_customers }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Outstanding</div>
+    <div class="stat-value" style="font-size:16px">{{ summary.total_outstanding|indian_rupee }}</div>
+    <div class="stat-sub">Receivable from parties</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Over Credit Limit</div>
+    <div class="stat-value" style="color:{% if summary.over_credit_limit %}var(--danger){% else %}var(--success){% endif %}">{{ summary.over_credit_limit }}</div>
+    <div class="stat-sub">Parties over their limit</div>
+  </div>
+</div>
+
+<div class="card mb-16">
+  <form method="GET" class="filter-form">
+    <div class="filter-row">
+      <div class="filter-search">
+        <input type="search" name="search"
+               value="{{ current_filters.search|default:'' }}"
+               placeholder="Search name, GSTIN, mobile..."
+               class="form-control"
+               hx-get="{% url 'customers_ui:customer-list' %}"
+               hx-target="#customer-table-container"
+               hx-trigger="input changed delay:400ms"
+               hx-include="closest form"
+               hx-push-url="true">
+      </div>
+
+      <select name="party_type" class="form-control" onchange="this.form.submit()">
+        <option value="">All Types</option>
+        {% for val, label in party_types %}
+          <option value="{{ val }}" {% if current_filters.party_type == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="state" class="form-control" onchange="this.form.submit()">
+        <option value="">All States</option>
+        {% for st in states %}
+          <option value="{{ st }}" {% if current_filters.state == st %}selected{% endif %}>{{ st }}</option>
+        {% endfor %}
+      </select>
+
+      <label class="filter-toggle">
+        <input type="checkbox" name="over_limit" value="true" {% if current_filters.over_limit %}checked{% endif %} onchange="this.form.submit()">
+        Over Credit Limit
+      </label>
+
+      <label class="filter-toggle">
+        <input type="checkbox" name="is_active" value="false" {% if current_filters.is_active == 'false' %}checked{% endif %} onchange="this.form.submit()">
+        Show Inactive
+      </label>
+
+      {% if current_filters.search or current_filters.party_type or current_filters.state or current_filters.over_limit or current_filters.is_active %}
+      <a href="{% url 'customers_ui:customer-list' %}" class="btn btn-sm btn-secondary">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div id="customer-table-container">
+  {% include "customers/_customer_table.html" %}
+</div>
+{% endblock %}

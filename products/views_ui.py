@@ -673,16 +673,30 @@ class BulkUploadView(OnboardingCheckMixin, View):
             return render(request, self.template_name, {"units": units, "row_errors": [{"row_num": 0, "field": "csv_file", "error": "Invalid encoding"}]}, status=400)
 
         reader = csv.DictReader(io.StringIO(content))
-        required = {"name", "hsn_code", "unit", "selling_price", "gst_rate", "category", "current_stock", "minimum_stock"}
-        if not required.issubset(set(reader.fieldnames or [])):
+        fieldnames = [((name or "").strip().lower()) for name in (reader.fieldnames or [])]
+        required = {"name", "hsn_code", "unit", "selling_price", "gst_rate"}
+        if not required.issubset(set(fieldnames)):
             messages.error(request, "CSV headers are invalid")
-            return render(request, self.template_name, {"units": units, "row_errors": [{"row_num": 0, "field": "headers", "error": "Required columns are missing"}]}, status=400)
+            return render(
+                request,
+                self.template_name,
+                {
+                    "units": units,
+                    "row_errors": [{"row_num": 0, "field": "headers", "error": "Required columns are missing: name, hsn_code, unit, selling_price, gst_rate"}],
+                },
+                status=400,
+            )
+
+        # Normalize row keys so CSV headers like "Name" or " selling_price " are accepted.
+        normalized_rows = []
+        for raw_row in reader:
+            normalized_rows.append({((key or "").strip().lower()): value for key, value in raw_row.items()})
 
         row_errors: list[dict] = []
         prepared_rows: list[dict] = []
         csv_names_seen: set[str] = set()
 
-        for idx, row in enumerate(reader, start=2):
+        for idx, row in enumerate(normalized_rows, start=2):
             name = (row.get("name") or "").strip()
             hsn_code = (row.get("hsn_code") or "").strip()
             unit_short = (row.get("unit") or "").strip()

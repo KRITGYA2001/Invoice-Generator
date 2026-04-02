@@ -1,0 +1,98 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load ui_tags %}
+
+{% block title %}GSTR-1 Summary{% endblock %}
+
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+  <div class="page-shell report-shell" id="report-results">
+    <div class="page-header report-header">
+      <div>
+        <div class="eyebrow">GST</div>
+        <h1 class="page-title">GSTR-1 summary</h1>
+        <p class="page-subtitle">{{ gstr1_report.total_count }} invoices for {{ period_label }}</p>
+      </div>
+      <div class="report-actions no-print">
+        <a class="btn btn-secondary" href="{% url 'reports_ui:gst-report' %}">Back to GST reports</a>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <form class="card report-toolbar no-print" method="get" action="" hx-get="" hx-target="#report-results" hx-select="#report-results" hx-push-url="true">
+      <div class="filter-grid">
+        <div class="filter-group"><label class="form-label">Range</label><select class="form-control" name="range">{% for value, label in date_range_options %}<option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="filter-group"><label class="form-label">From</label><input class="form-control" type="date" name="date_from" value="{{ date_from_str }}"></div>
+        <div class="filter-group"><label class="form-label">To</label><input class="form-control" type="date" name="date_to" value="{{ date_to_str }}"></div>
+        <div class="filter-group"><label class="form-label">Financial year</label><input class="form-control" type="text" name="financial_year" value="{{ financial_year }}"></div>
+        <div class="filter-group"><label class="form-label">&nbsp;</label><button class="btn btn-primary" type="submit">Apply</button></div>
+      </div>
+    </form>
+
+    <section class="metric-grid">
+      <article class="stat-card"><div class="stat-label">Invoices</div><div class="stat-value">{{ gstr1_report.total_count }}</div></article>
+      <article class="stat-card"><div class="stat-label">Period start</div><div class="stat-value">{{ gstr1_report.period.date_from }}</div></article>
+      <article class="stat-card"><div class="stat-label">Period end</div><div class="stat-value">{{ gstr1_report.period.date_to }}</div></article>
+      <article class="stat-card"><div class="stat-label">File ready</div><div class="stat-value">Yes</div></article>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><div><div class="card-kicker">Invoices</div><h2 class="card-title">Invoice level GSTR-1 view</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>GSTIN</th>
+              <th>POS</th>
+              <th class="align-right">Taxable</th>
+              <th class="align-right">Tax</th>
+              <th class="align-right">Grand total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for invoice in gstr1_report.invoices %}
+              <tr>
+                <td>{{ invoice.invoice_number }}</td>
+                <td>{{ invoice.invoice_date }}</td>
+                <td>
+                  <div>{{ invoice.customer_name }}</div>
+                  <div class="report-muted">{% if invoice.reverse_charge %}Reverse charge{% endif %}</div>
+                </td>
+                <td>{{ invoice.customer_gstin|default:"-" }}</td>
+                <td>{{ invoice.place_of_supply|default:invoice.customer_state|default:"-" }}</td>
+                <td class="align-right">{{ invoice.taxable_amount|indian_rupee }}</td>
+                <td class="align-right">{{ invoice.total_tax|indian_rupee }}</td>
+                <td class="align-right">{{ invoice.grand_total|indian_rupee }}</td>
+              </tr>
+              <tr>
+                <td colspan="8">
+                  <div class="report-muted">Rate wise breakup</div>
+                  <div class="stack-list">
+                    {% for row in invoice.rate_wise %}
+                      <div class="stack-item">
+                        <div>
+                          <div class="stack-title">HSN {{ row.hsn_code|default:"-" }} · {{ row.gst_rate }}%</div>
+                          <div class="stack-meta">Taxable {{ row.taxable|indian_rupee }} | CGST {{ row.cgst|indian_rupee }} | SGST {{ row.sgst|indian_rupee }} | IGST {{ row.igst|indian_rupee }}</div>
+                        </div>
+                      </div>
+                    {% empty %}
+                      <div class="table-empty">No line item breakup recorded.</div>
+                    {% endfor %}
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="8" class="table-empty">No invoices found for the selected period.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}

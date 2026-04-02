@@ -1,0 +1,34 @@
+{% load ui_tags %}
+{% if contacts %}
+  <div class="contact-list">
+    {% for contact in contacts %}
+    <div class="contact-item">
+      <div class="flex-between">
+        <div class="flex-center gap-10">
+          <div class="avatar avatar-sm">{{ contact.name|first }}</div>
+          <div>
+            <div class="font-bold text-sm">
+              {{ contact.name }}
+              {% if contact.is_primary %}
+                <span class="badge badge-green" style="font-size:10px">Primary</span>
+              {% endif %}
+            </div>
+            {% if contact.designation %}<div class="text-xs text-muted">{{ contact.designation }}</div>{% endif %}
+          </div>
+        </div>
+        <button class="btn btn-icon btn-danger" style="padding:4px 6px" hx-post="{% url 'customers_ui:contact-delete' customer.pk contact.pk %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' hx-confirm="Delete this contact?" hx-target="#contacts-list" hx-swap="innerHTML">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      {% if contact.mobile or contact.email %}
+      <div class="contact-info">
+        {% if contact.mobile %}<span class="text-xs">{{ contact.mobile }}</span>{% endif %}
+        {% if contact.email %}<span class="text-xs">{{ contact.email }}</span>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state" style="padding:16px"><div class="text-sm text-muted">No contacts added</div></div>
+{% endif %}

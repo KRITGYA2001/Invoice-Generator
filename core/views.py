@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpRequest, HttpResponse
@@ -35,11 +37,18 @@ class DashboardView(LoginRequiredMixin, OnboardingCheckMixin, View):
 
 	def get(self, request: HttpRequest) -> HttpResponse:
 		company = request.user.company_profile
-		overview = DashboardService.get_overview(company)
+		current_fy = DashboardService.get_current_financial_year()
+		overview = DashboardService.get_overview(company, financial_year=current_fy)
 		trend = DashboardService.get_monthly_trend(company)
 		context = {
+			"company": company,
 			"overview": overview,
 			"trend": trend,
+			"current_fy": current_fy,
+			"trend_labels": json.dumps([month["month"] for month in trend["months"]]),
+			"trend_revenue": json.dumps([float(month["revenue"]) for month in trend["months"]]),
+			"trend_invoices": json.dumps([month["invoice_count"] for month in trend["months"]]),
+			"trend_tax": json.dumps([float(month["tax_amount"]) for month in trend["months"]]),
 			"low_stock_count": overview["products"]["low_stock"],
 			"page_title": "Dashboard",
 		}

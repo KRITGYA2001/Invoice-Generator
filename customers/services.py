@@ -67,6 +67,7 @@ class CustomerService:
             running_balance += invoice.grand_total
             transactions.append(
                 {
+                    "invoice_id": invoice.id,
                     "date": invoice.invoice_date,
                     "invoice_no": invoice.invoice_number,
                     "amount": invoice.grand_total,

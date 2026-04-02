@@ -1,0 +1,75 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load ui_tags %}
+
+{% block title %}Daily Sales{% endblock %}
+
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+  <div class="page-shell report-shell" id="report-results">
+    <div class="page-header report-header">
+      <div>
+        <div class="eyebrow">Sales</div>
+        <h1 class="page-title">Daily sales</h1>
+        <p class="page-subtitle">{{ daily_sales.period.date_from }} to {{ daily_sales.period.date_to }}</p>
+      </div>
+      <div class="report-actions no-print">
+        <a class="btn btn-secondary" href="{% url 'reports_ui:sales-report' %}">Back to sales reports</a>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <section class="card chart-card">
+      <div class="card-header"><div><div class="card-kicker">Trend</div><h2 class="card-title">Revenue by day</h2></div></div>
+      <div class="chart-panel"><canvas id="dailySalesChart" height="120"></canvas></div>
+    </section>
+
+    <section class="card mt-16">
+      <div class="card-header"><div><div class="card-kicker">Rows</div><h2 class="card-title">Daily detail</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead><tr><th>Date</th><th>Invoices</th><th class="align-right">Revenue</th><th class="align-right">Tax</th></tr></thead>
+          <tbody>
+            {% for row in daily_sales.daily %}
+              <tr>
+                <td>{{ row.date }}</td>
+                <td>{{ row.invoice_count }}</td>
+                <td class="align-right">{{ row.revenue|indian_rupee }}</td>
+                <td class="align-right">{{ row.tax|indian_rupee }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="table-empty">No daily data available.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/charts.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      window.buildLineChart('dailySalesChart', {{ daily_labels|safe }}, [{
+        label: 'Revenue',
+        data: {{ daily_revenue|safe }},
+        borderColor: '#1a3a5c',
+        backgroundColor: 'rgba(26,58,92,0.15)',
+        tension: 0.25,
+        fill: true,
+      }], {
+        scales: {
+          y: {
+            ticks: {
+              callback: (value) => window.formatIndian(value),
+            },
+          },
+        },
+      });
+    });
+  </script>
+{% endblock %}

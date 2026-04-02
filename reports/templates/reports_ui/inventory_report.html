@@ -1,0 +1,111 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load ui_tags %}
+
+{% block title %}Inventory Reports{% endblock %}
+
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+  <div class="page-shell report-shell" id="report-results">
+    <div class="page-header report-header">
+      <div>
+        <div class="eyebrow">Inventory</div>
+        <h1 class="page-title">Inventory reports</h1>
+        <p class="page-subtitle">Stock valuation and low stock review</p>
+      </div>
+      <div class="report-actions no-print">
+        <a class="btn btn-secondary" href="{% url 'reports_ui:stock-movement' %}">Stock movement</a>
+        <a class="btn btn-secondary" href="{% url 'reports_ui:low-stock' %}">Low stock</a>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <section class="metric-grid">
+      <article class="stat-card"><div class="stat-label">Products</div><div class="stat-value">{{ inventory_valuation.summary.total_products }}</div></article>
+      <article class="stat-card"><div class="stat-label">Stock value</div><div class="stat-value">{{ inventory_valuation.summary.total_stock_value|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">Selling value</div><div class="stat-value">{{ inventory_valuation.summary.total_selling_value|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">Potential profit</div><div class="stat-value">{{ inventory_valuation.summary.potential_profit|indian_rupee }}</div></article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="card chart-card chart-card-wide">
+        <div class="card-header"><div><div class="card-kicker">Valuation</div><h2 class="card-title">Stock value by category</h2></div></div>
+        <div class="chart-panel"><canvas id="inventoryCategoryChart" height="120"></canvas></div>
+      </article>
+      <article class="card">
+        <div class="card-header"><div><div class="card-kicker">Alerts</div><h2 class="card-title">Low stock items</h2></div></div>
+        <div class="stack-list">
+          {% for row in low_stock_report.products|slice:":5" %}
+            <div class="stack-item">
+              <div>
+                <div class="stack-title">{{ row.name }}</div>
+                <div class="stack-meta">{{ row.category }} · shortage {{ row.shortage }} {{ row.unit }}</div>
+              </div>
+              <div class="stack-value">{{ row.current_stock }}</div>
+            </div>
+          {% empty %}
+            <div class="table-empty">No low stock items detected.</div>
+          {% endfor %}
+        </div>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><div><div class="card-kicker">Categories</div><h2 class="card-title">Category valuation</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead><tr><th>Category</th><th>Products</th><th class="align-right">Stock value</th></tr></thead>
+          <tbody>
+            {% for row in inventory_valuation.by_category %}
+              <tr>
+                <td>{{ row.category_name }}</td>
+                <td>{{ row.product_count }}</td>
+                <td class="align-right">{{ row.stock_value|indian_rupee }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="table-empty">No category valuation available.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card mt-16">
+      <div class="card-header"><div><div class="card-kicker">Products</div><h2 class="card-title">Product valuation</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>Unit</th><th class="align-right">Stock</th><th class="align-right">Purchase</th><th class="align-right">Selling</th><th class="align-right">Stock value</th><th class="align-right">Selling value</th></tr></thead>
+          <tbody>
+            {% for row in inventory_valuation.products %}
+              <tr>
+                <td>{{ row.name }}</td>
+                <td>{{ row.sku|default:"-" }}</td>
+                <td>{{ row.category }}</td>
+                <td>{{ row.unit|default:"-" }}</td>
+                <td class="align-right">{{ row.current_stock }}</td>
+                <td class="align-right">{{ row.purchase_price|indian_rupee }}</td>
+                <td class="align-right">{{ row.selling_price|indian_rupee }}</td>
+                <td class="align-right">{{ row.stock_value|indian_rupee }}</td>
+                <td class="align-right">{{ row.selling_value|indian_rupee }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="9" class="table-empty">No inventory valuation available.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/charts.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      window.buildBarChart('inventoryCategoryChart', {{ inventory_category_labels|safe }}, {{ inventory_category_values|safe }}, 'Stock value', ['#1a3a5c']);
+    });
+  </script>
+{% endblock %}

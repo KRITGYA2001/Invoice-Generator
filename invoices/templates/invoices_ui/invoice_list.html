@@ -1,0 +1,80 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+{% block title %}Invoices{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-24">
+  <div>
+    <h1 class="page-heading">Invoices</h1>
+    <p class="text-muted text-sm">
+      FY {{ current_filters.financial_year|default:"All" }} |
+      {{ summary.total }} invoices
+    </p>
+  </div>
+  <a href="{% url 'invoices_ui:invoice-create' %}" class="btn btn-accent btn-lg">+ New Invoice</a>
+</div>
+
+<div class="grid-4 mb-24">
+  <div class="stat-card">
+    <div class="stat-label">Total Invoices</div>
+    <div class="stat-val">{{ summary.total }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Issued</div>
+    <div class="stat-val" style="color:var(--success)">{{ summary.issued_count }}</div>
+    <div class="stat-sub">{{ summary.issued_total|indian_rupee }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Draft</div>
+    <div class="stat-val" style="color:var(--warning)">{{ summary.draft_count }}</div>
+    <div class="stat-sub">Pending issue</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Cancelled</div>
+    <div class="stat-val" style="color:var(--gray-400)">{{ summary.cancelled_count }}</div>
+  </div>
+</div>
+
+<div class="card mb-16">
+  <form method="GET" class="filter-form">
+    <div class="filter-row">
+      <div class="filter-search">
+        <input type="search" name="search"
+               value="{{ current_filters.search|default:'' }}"
+               placeholder="Invoice number or party name..."
+               class="form-control"
+               hx-get="{% url 'invoices_ui:invoice-list' %}"
+               hx-target="#invoice-table-container"
+               hx-trigger="input changed delay:400ms"
+               hx-include="closest form"
+               hx-push-url="true">
+      </div>
+
+      <select name="status" class="form-control" style="width:auto" onchange="this.form.submit()">
+        <option value="">All Status</option>
+        <option value="DRAFT" {% if current_filters.status == 'DRAFT' %}selected{% endif %}>Draft</option>
+        <option value="ISSUED" {% if current_filters.status == 'ISSUED' %}selected{% endif %}>Issued</option>
+        <option value="CANCELLED" {% if current_filters.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+      </select>
+
+      <select name="financial_year" class="form-control" style="width:auto" onchange="this.form.submit()">
+        <option value="">All Years</option>
+        {% for fy in financial_years %}
+          <option value="{{ fy }}" {% if current_filters.financial_year == fy %}selected{% endif %}>FY {{ fy }}</option>
+        {% endfor %}
+      </select>
+
+      <input type="date" name="date_from" class="form-control" style="width:auto" value="{{ current_filters.date_from|default:'' }}" onchange="this.form.submit()">
+      <input type="date" name="date_to" class="form-control" style="width:auto" value="{{ current_filters.date_to|default:'' }}" onchange="this.form.submit()">
+
+      {% if current_filters.search or current_filters.status or current_filters.financial_year or current_filters.date_from or current_filters.date_to or current_filters.customer %}
+        <a href="{% url 'invoices_ui:invoice-list' %}" class="btn btn-sm btn-secondary">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div id="invoice-table-container">
+  {% include "invoices_ui/_invoice_table.html" %}
+</div>
+{% endblock %}

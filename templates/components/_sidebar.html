@@ -4,9 +4,6 @@
 {% url 'invoices_ui:invoice-list' as invoice_list_url %}
 {% url 'customers_ui:customer-list' as customer_list_url %}
 {% url 'products_ui:product-list' as product_list_url %}
-{% url 'reports_ui:gst-report' as gst_report_url %}
-{% url 'reports_ui:sales-report' as sales_report_url %}
-{% url 'reports_ui:inventory-report' as inventory_report_url %}
 {% url 'company_ui:profile' as company_profile_url %}
 <aside class="sidebar">
   <div class="sidebar-logo">
@@ -46,19 +43,24 @@
 
     <div class="nav-section-label">Reports</div>
 
-    <a href="{{ gst_report_url|default:'#' }}" class="nav-item {% active_nav_contains request 'gst' %}">
+    <a href="{% url 'reports_ui:gst-report' %}" class="nav-item {% active_nav_contains request 'gst' %}">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v18h16.5M7.5 15h3v3h-3zm5.25-6h3v9h-3z"/></svg>
       GST Reports
     </a>
 
-    <a href="{{ sales_report_url|default:'#' }}" class="nav-item {% active_nav_contains request 'sales' %}">
+    <a href="{% url 'reports_ui:sales-report' %}" class="nav-item {% active_nav_contains request 'sales' %}">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7.5 13.5 11.25 9l3 3 4.5-6"/></svg>
       Sales Reports
     </a>
 
-    <a href="{{ inventory_report_url|default:'#' }}" class="nav-item">
+    <a href="{% url 'reports_ui:inventory-report' %}" class="nav-item {% active_nav_contains request 'inventory' %}">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5h18M3 12h18M3 16.5h18"/></svg>
-      Inventory
+      Inventory Reports
+    </a>
+
+    <a href="{% url 'reports_ui:outstanding-report' %}" class="nav-item {% active_nav_contains request 'outstanding' %}">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 12H6m6-6v12"/></svg>
+      Outstanding Reports
     </a>
 
     <div class="nav-section-label">Settings</div>

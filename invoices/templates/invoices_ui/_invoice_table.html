@@ -1,0 +1,81 @@
+{% load ui_tags %}
+<div class="card">
+  {% if invoices %}
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Invoice No.</th>
+          <th>Date</th>
+          <th>Party</th>
+          <th>Supply Type</th>
+          <th>Taxable</th>
+          <th>Tax</th>
+          <th>Grand Total</th>
+          <th>Status</th>
+          <th class="actions-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr>
+          <td>
+            <a href="{% url 'invoices_ui:invoice-detail' inv.pk %}" class="font-mono font-bold text-link">
+              {{ inv.invoice_number }}
+            </a>
+          </td>
+          <td class="text-sm">
+            {{ inv.invoice_date|date:"d M Y" }}
+            {% if inv.due_date %}
+              <div class="text-xs text-muted">Due: {{ inv.due_date|date:"d M Y" }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <div class="font-bold text-sm">{{ inv.customer_name }}</div>
+            {% if inv.customer_gstin %}
+              <div class="text-xs text-muted font-mono">{{ inv.customer_gstin }}</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if inv.is_interstate %}
+              <span class="badge badge-blue">Interstate</span>
+            {% else %}
+              <span class="badge badge-navy">Intrastate</span>
+            {% endif %}
+            {% if inv.reverse_charge %}
+              <span class="badge badge-amber" style="margin-top:2px;display:block">RC</span>
+            {% endif %}
+          </td>
+          <td class="font-mono text-sm">{{ inv.subtotal|indian_rupee }}</td>
+          <td class="font-mono text-sm">{{ inv.total_tax|indian_rupee }}</td>
+          <td class="font-mono font-bold">{{ inv.grand_total|indian_rupee }}</td>
+          <td>
+            {% if inv.status == 'ISSUED' %}
+              <span class="badge badge-green">Issued</span>
+            {% elif inv.status == 'DRAFT' %}
+              <span class="badge badge-amber">Draft</span>
+            {% else %}
+              <span class="badge badge-gray">Cancelled</span>
+            {% endif %}
+          </td>
+          <td class="actions-col">
+            <div class="flex-center gap-4">
+              <a href="{% url 'invoices_ui:invoice-detail' inv.pk %}" class="btn btn-sm btn-secondary">View</a>
+              {% if inv.status == 'ISSUED' %}
+                <a href="{% url 'invoices_ui:invoice-pdf' inv.pk %}" class="btn btn-sm btn-secondary" title="Download PDF">PDF</a>
+              {% endif %}
+              {% if inv.status == 'DRAFT' %}
+                <a href="{% url 'invoices_ui:invoice-edit' inv.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "components/_pagination.html" with page_obj=page_obj %}
+  {% else %}
+    {% include "components/_empty_state.html" with title="No invoices found" description="Create your first invoice" %}
+  {% endif %}
+</div>

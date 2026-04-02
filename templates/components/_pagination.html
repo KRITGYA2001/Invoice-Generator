@@ -1,17 +1,33 @@
-{% if pagination and pagination.total_pages > 1 %}
+{% load ui_tags %}
+{% if page_obj.has_other_pages %}
 <div class="pagination">
-  {% if pagination.page > 1 %}
-    <a class="page-item" href="?page={{ pagination.page|add:'-1' }}">&laquo;</a>
+  {% if page_obj.has_previous %}
+    <a class="page-item" href="?{% query_transform page=page_obj.previous_page_number %}">
+      &larr;
+    </a>
   {% else %}
-    <span class="page-item disabled">&laquo;</span>
+    <span class="page-item disabled">&larr;</span>
   {% endif %}
 
-  <span class="page-item active">{{ pagination.page }}</span>
+  {% for num in page_obj.paginator.page_range %}
+    {% if page_obj.number == num %}
+      <span class="page-item active">{{ num }}</span>
+    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+      <a class="page-item" href="?{% query_transform page=num %}">{{ num }}</a>
+    {% endif %}
+  {% endfor %}
 
-  {% if pagination.page < pagination.total_pages %}
-    <a class="page-item" href="?page={{ pagination.page|add:'1' }}">&raquo;</a>
+  {% if page_obj.has_next %}
+    <a class="page-item" href="?{% query_transform page=page_obj.next_page_number %}">
+      &rarr;
+    </a>
   {% else %}
-    <span class="page-item disabled">&raquo;</span>
+    <span class="page-item disabled">&rarr;</span>
   {% endif %}
+</div>
+
+<div class="text-center text-xs text-muted mt-8">
+  Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  &middot; {{ page_obj.paginator.count }} total records
 </div>
 {% endif %}

@@ -1,0 +1,71 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load ui_tags %}
+
+{% block title %}HSN Summary{% endblock %}
+
+{% block content %}
+  <div class="page-shell report-shell" id="report-results">
+    <div class="page-header report-header">
+      <div>
+        <div class="eyebrow">GST</div>
+        <h1 class="page-title">HSN summary</h1>
+        <p class="page-subtitle">HSN roll-up for {{ period_label }}</p>
+      </div>
+      <div class="report-actions no-print">
+        <a class="btn btn-secondary" href="{% url 'reports_ui:gst-report' %}">Back to GST reports</a>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <form class="card report-toolbar no-print" method="get" action="" hx-get="" hx-target="#report-results" hx-select="#report-results" hx-push-url="true">
+      <div class="filter-grid">
+        <div class="filter-group"><label class="form-label">Range</label><select class="form-control" name="range">{% for value, label in date_range_options %}<option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="filter-group"><label class="form-label">From</label><input class="form-control" type="date" name="date_from" value="{{ date_from_str }}"></div>
+        <div class="filter-group"><label class="form-label">To</label><input class="form-control" type="date" name="date_to" value="{{ date_to_str }}"></div>
+        <div class="filter-group"><label class="form-label">Financial year</label><input class="form-control" type="text" name="financial_year" value="{{ financial_year }}"></div>
+        <div class="filter-group"><label class="form-label">&nbsp;</label><button class="btn btn-primary" type="submit">Apply</button></div>
+      </div>
+    </form>
+
+    <section class="card">
+      <div class="card-header"><div><div class="card-kicker">HSN</div><h2 class="card-title">HSN code summary</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>HSN</th>
+              <th>Description</th>
+              <th>UQC</th>
+              <th class="align-right">Qty</th>
+              <th class="align-right">Taxable</th>
+              <th class="align-right">Rate</th>
+              <th class="align-right">CGST</th>
+              <th class="align-right">SGST</th>
+              <th class="align-right">IGST</th>
+              <th class="align-right">Tax</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in hsn_report.hsn_summary %}
+              <tr>
+                <td>{{ row.hsn_code|default:"-" }}</td>
+                <td>{{ row.description|default:"-" }}</td>
+                <td>{{ row.uqc|default:"-" }}</td>
+                <td class="align-right">{{ row.total_quantity|indian_rupee }}</td>
+                <td class="align-right">{{ row.total_taxable|indian_rupee }}</td>
+                <td class="align-right">{{ row.gst_rate }}%</td>
+                <td class="align-right">{{ row.cgst_amount|indian_rupee }}</td>
+                <td class="align-right">{{ row.sgst_amount|indian_rupee }}</td>
+                <td class="align-right">{{ row.igst_amount|indian_rupee }}</td>
+                <td class="align-right">{{ row.total_tax|indian_rupee }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="10" class="table-empty">No HSN summary available.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}

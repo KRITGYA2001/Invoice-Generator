@@ -1,0 +1,62 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+
+{% block title %}Stock Movement{% endblock %}
+
+{% block content %}
+  <div class="page-shell report-shell" id="report-results">
+    <div class="page-header report-header">
+      <div>
+        <div class="eyebrow">Inventory</div>
+        <h1 class="page-title">Stock movement</h1>
+        <p class="page-subtitle">Period {{ period_label }}</p>
+      </div>
+      <div class="report-actions no-print">
+        <a class="btn btn-secondary" href="{% url 'reports_ui:inventory-report' %}">Back to inventory</a>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <form class="card report-toolbar no-print" method="get" action="" hx-get="" hx-target="#report-results" hx-select="#report-results" hx-push-url="true">
+      <div class="filter-grid">
+        <div class="filter-group"><label class="form-label">Range</label><select class="form-control" name="range">{% for value, label in date_range_options %}<option value="{{ value }}" {% if selected_range == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="filter-group"><label class="form-label">From</label><input class="form-control" type="date" name="date_from" value="{{ date_from_str }}"></div>
+        <div class="filter-group"><label class="form-label">To</label><input class="form-control" type="date" name="date_to" value="{{ date_to_str }}"></div>
+        <div class="filter-group"><label class="form-label">&nbsp;</label><button class="btn btn-primary" type="submit">Apply</button></div>
+      </div>
+    </form>
+
+    <section class="metric-grid">
+      <article class="stat-card"><div class="stat-label">Inbound</div><div class="stat-value">{{ stock_movement.summary.total_in|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">Outbound</div><div class="stat-value">{{ stock_movement.summary.total_out|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">Net movement</div><div class="stat-value">{{ stock_movement.summary.net_movement|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">Rows</div><div class="stat-value">{{ stock_movement.movements|length }}</div></article>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><div><div class="card-kicker">Movements</div><h2 class="card-title">Stock movement detail</h2></div></div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead><tr><th>Date</th><th>Product</th><th>Type</th><th class="align-right">Qty</th><th class="align-right">Before</th><th class="align-right">After</th><th>Reference</th><th>Notes</th><th>By</th></tr></thead>
+          <tbody>
+            {% for row in stock_movement.movements %}
+              <tr>
+                <td>{{ row.date }}</td>
+                <td>{{ row.product_name }}</td>
+                <td>{{ row.movement_type }}</td>
+                <td class="align-right">{{ row.quantity }}</td>
+                <td class="align-right">{{ row.stock_before }}</td>
+                <td class="align-right">{{ row.stock_after }}</td>
+                <td>{{ row.reference_type|default:"-" }}</td>
+                <td>{{ row.notes|default:"-" }}</td>
+                <td>{{ row.created_by|default:"-" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="9" class="table-empty">No stock movement records found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}

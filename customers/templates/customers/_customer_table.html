@@ -1,0 +1,94 @@
+{% load ui_tags %}
+<div class="card">
+  {% if customers %}
+    <div class="table-sort-bar">
+      <span class="text-xs text-muted">{{ page_obj.paginator.count }} parties</span>
+      <div class="flex-center gap-8">
+        <a href="?{% query_transform ordering='name' %}" class="sort-link {% if ordering == 'name' %}active{% endif %}">Name</a>
+        <a href="?{% query_transform ordering='current_balance' %}" class="sort-link {% if ordering == 'current_balance' %}active{% endif %}">Outstanding</a>
+        <a href="?{% query_transform ordering='-created_at' %}" class="sort-link {% if ordering == '-created_at' %}active{% endif %}">Date Added</a>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Party Name</th>
+            <th>Type</th>
+            <th>GSTIN</th>
+            <th>Mobile</th>
+            <th>State</th>
+            <th>Outstanding</th>
+            <th>Credit Limit</th>
+            <th>Status</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for customer in customers %}
+          <tr>
+            <td>
+              <div class="customer-name-cell">
+                <div class="avatar avatar-sm" style="background:{{ customer.display_name|default:customer.name|first|lower|party_color }}">
+                  {{ customer|initials }}
+                </div>
+                <div>
+                  <a href="{% url 'customers_ui:customer-detail' customer.pk %}" class="font-bold text-link">
+                    {{ customer.display_name|default:customer.name }}
+                  </a>
+                  {% if customer.email %}
+                    <div class="text-xs text-muted">{{ customer.email }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if customer.party_type == 'BUSINESS' %}
+                <span class="badge badge-navy">Business</span>
+              {% elif customer.party_type == 'INDIVIDUAL' %}
+                <span class="badge badge-blue">Individual</span>
+              {% else %}
+                <span class="badge badge-amber">Govt</span>
+              {% endif %}
+            </td>
+            <td class="font-mono text-sm">{{ customer.gstin|default:"-" }}</td>
+            <td class="text-sm">{{ customer.mobile_primary }}</td>
+            <td class="text-sm">{{ customer.billing_state }} <span class="text-muted">({{ customer.billing_state_code }})</span></td>
+            <td>
+              <span class="font-mono font-bold {% if customer.current_balance > 0 %}text-warning{% elif customer.current_balance < 0 %}text-success{% endif %}">{{ customer.current_balance|indian_rupee }}</span>
+              {% if customer.is_over_credit_limit %}
+                <span class="badge badge-red" style="font-size:10px;display:block;margin-top:2px">Over Limit</span>
+              {% endif %}
+            </td>
+            <td class="font-mono text-sm text-muted">
+              {% if customer.credit_limit > 0 %}
+                {{ customer.credit_limit|indian_rupee }}
+              {% else %}
+                No limit
+              {% endif %}
+            </td>
+            <td>
+              {% if customer.is_active %}
+                <span class="badge badge-green">Active</span>
+              {% else %}
+                <span class="badge badge-gray">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="actions-col">
+              <div class="flex-center gap-6">
+                <a href="{% url 'customers_ui:customer-detail' customer.pk %}" class="btn btn-sm btn-secondary">View</a>
+                <a href="{% url 'customers_ui:customer-edit' customer.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/_pagination.html" with page_obj=page_obj %}
+  {% else %}
+    {% include "components/_empty_state.html" with title="No parties found" description="Add your first customer or supplier" %}
+  {% endif %}
+</div>

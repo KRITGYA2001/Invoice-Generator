@@ -1,0 +1,560 @@
+{% extends "base/base.html" %}
+{% load invoice_filters ui_tags %}
+{% block title %}Print {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<style>
+  .invoice-print-shell {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 0 40px;
+  }
+
+  .print-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .print-toolbar .hint {
+    color: var(--gray-500);
+    font-size: var(--text-sm);
+  }
+
+  .print-sheet {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .print-copy {
+    padding: 24px;
+  }
+
+  .print-copy + .print-copy {
+    border-top: 10px solid var(--gray-100);
+    page-break-before: always;
+  }
+
+  .print-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-start;
+  }
+
+  .print-brand {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    flex: 1;
+  }
+
+  .print-logo-box {
+    width: 94px;
+    min-width: 94px;
+    height: 72px;
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--gray-50);
+  }
+
+  .print-logo-box img {
+    max-width: 90px;
+    max-height: 66px;
+    object-fit: contain;
+  }
+
+  .print-company-name {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--brand-dark);
+    line-height: 1.15;
+  }
+
+  .print-company-meta {
+    margin-top: 4px;
+    font-size: var(--text-sm);
+    color: var(--gray-700);
+  }
+
+  .print-invoice-box {
+    min-width: 220px;
+    border: 2px solid var(--brand-dark);
+    border-radius: 12px;
+    text-align: center;
+    padding: 14px 12px 10px;
+  }
+
+  .print-invoice-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--brand-dark);
+    letter-spacing: 0.03em;
+  }
+
+  .print-copy-label {
+    margin-top: 6px;
+    font-size: var(--text-sm);
+    font-style: italic;
+    color: var(--gray-600);
+  }
+
+  .print-divider {
+    height: 2px;
+    background: linear-gradient(90deg, var(--brand-dark), var(--accent));
+    margin: 16px 0;
+  }
+
+  .print-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .print-meta-card {
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .print-section-title {
+    font-size: var(--text-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--brand-dark);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .print-line-table,
+  .print-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .print-line-table th,
+  .print-line-table td,
+  .print-summary-table th,
+  .print-summary-table td {
+    border: 1px solid var(--gray-300);
+    padding: 5px 6px;
+    vertical-align: top;
+    font-size: 10px;
+  }
+
+  .print-line-table thead th,
+  .print-summary-table thead th {
+    background: var(--brand-light);
+    color: var(--gray-900);
+    font-weight: 700;
+  }
+
+  .print-line-table .right,
+  .print-summary-table .right {
+    text-align: right;
+  }
+
+  .print-line-table .center,
+  .print-summary-table .center {
+    text-align: center;
+  }
+
+  .print-line-name {
+    font-weight: 700;
+    color: var(--gray-900);
+  }
+
+  .print-muted {
+    color: var(--gray-500);
+    font-size: 10px;
+  }
+
+  .print-total-box {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .print-stack {
+    display: grid;
+    gap: 8px;
+  }
+
+  .print-total-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #fff;
+  }
+
+  .print-total-row strong {
+    color: var(--gray-900);
+  }
+
+  .print-grand-total {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 10px;
+    border-radius: 10px;
+    background: var(--brand-dark);
+    color: #fff;
+    font-weight: 800;
+    font-size: 16px;
+  }
+
+  .print-amount-words {
+    border: 1px dashed var(--gray-300);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: var(--text-sm);
+    color: var(--gray-700);
+    background: var(--gray-50);
+  }
+
+  .print-footer-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.75fr 1.15fr;
+    gap: 14px;
+    margin-top: 14px;
+    align-items: start;
+  }
+
+  .print-signature-box {
+    border-top: 1px solid var(--gray-400);
+    padding-top: 10px;
+    margin-top: 40px;
+    text-align: center;
+  }
+
+  .print-signature-name {
+    margin-top: 8px;
+    font-weight: 700;
+  }
+
+  .print-qr-box {
+    border: 1px solid var(--gray-300);
+    border-radius: 10px;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--gray-500);
+    background: #fff;
+  }
+
+  @media print {
+    .invoice-print-shell {
+      max-width: none;
+      padding: 0;
+    }
+
+    .print-toolbar {
+      display: none !important;
+    }
+
+    .print-sheet {
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .print-copy {
+      padding: 0;
+    }
+
+    .print-copy + .print-copy {
+      border-top: none;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .print-top,
+    .print-grid-2,
+    .print-total-box,
+    .print-footer-grid {
+      grid-template-columns: 1fr;
+      display: grid;
+    }
+
+    .print-top {
+      display: grid;
+    }
+
+    .print-invoice-box {
+      min-width: 0;
+    }
+  }
+</style>
+
+<div class="invoice-print-shell">
+  <div class="print-toolbar no-print">
+    <div>
+      <div class="page-heading" style="margin:0;">Invoice print view</div>
+      <div class="hint">Use your browser's print dialog to save as PDF or print a paper copy.</div>
+    </div>
+    <div class="flex-center gap-8">
+      <a class="btn btn-secondary" href="{% url 'invoices_ui:invoice-detail' invoice.pk %}">Back</a>
+      <a class="btn btn-secondary" href="{% url 'invoices_ui:invoice-pdf' invoice.pk %}?copies=1">PDF download</a>
+      <button type="button" class="btn btn-accent" onclick="window.print()">Print / Save as PDF</button>
+    </div>
+  </div>
+
+  <div class="print-sheet">
+    {% for copy_label in copy_labels %}
+      <section class="print-copy">
+        <div class="print-top">
+          <div class="print-brand">
+            <div class="print-logo-box">
+              {% if company_logo_src %}
+                <img src="{{ company_logo_src }}" alt="{{ company.company_name }} logo">
+              {% else %}
+                <div style="padding: 10px; text-align:center; font-weight: 800; color: var(--brand-dark);">{{ company.logo_text|default:company.company_name|slice:":6" }}</div>
+              {% endif %}
+            </div>
+            <div>
+              <div class="print-company-name">{{ company.company_name }}</div>
+              {% if company.unit_division %}<div class="print-company-meta"><strong>{{ company.unit_division }}</strong></div>{% endif %}
+              <div class="print-company-meta">{{ company.address_line1 }}{% if company.address_line2 %}, {{ company.address_line2 }}{% endif %}, {{ company.city }}, {{ company.state }}, {{ company.pincode }}</div>
+              {% if company.pan %}<div class="print-company-meta">PAN: {{ company.pan }}</div>{% endif %}
+              {% if company.gstin %}<div class="print-company-meta">GSTIN: {{ company.gstin }}</div>{% endif %}
+              <div class="print-company-meta">Tel: {{ company.mobile_primary }}{% if company.mobile_secondary %}, {{ company.mobile_secondary }}{% endif %}{% if company.email %} | Email: {{ company.email }}{% endif %}</div>
+            </div>
+          </div>
+
+          <div class="print-invoice-box">
+            <div class="print-invoice-title">TAX INVOICE</div>
+            <div class="print-copy-label">{{ copy_label|upper }}</div>
+            <div class="print-muted" style="margin-top:8px;">{{ invoice.invoice_number }}</div>
+          </div>
+        </div>
+
+        <div class="print-divider"></div>
+
+        <div class="print-grid-2">
+          <div class="print-meta-card">
+            <div class="print-section-title">Invoice Details</div>
+            <table class="print-summary-table">
+              <tbody>
+                <tr><td>Invoice No.</td><td>: {{ invoice.invoice_number }}</td></tr>
+                <tr><td>Dated</td><td>: {{ invoice.invoice_date|format_date_indian }}</td></tr>
+                <tr><td>Place of Supply</td><td>: {{ invoice.place_of_supply }} ({{ invoice.place_of_supply_code }})</td></tr>
+                <tr><td>Reverse Charge</td><td>: {% if invoice.reverse_charge %}Y{% else %}N{% endif %}</td></tr>
+                <tr><td>Transport</td><td>: {{ invoice.transport_mode|default:'-' }}</td></tr>
+                <tr><td>Vehicle No.</td><td>: {{ invoice.vehicle_number|default:'-' }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="print-meta-card">
+            <div class="print-section-title">Reference</div>
+            <table class="print-summary-table">
+              <tbody>
+                <tr><td>Station</td><td>: {{ invoice.station|default:'-' }}</td></tr>
+                <tr><td>E-Way Bill No.</td><td>: {{ invoice.eway_bill_number|default:'-' }}</td></tr>
+                <tr><td>P.O. Number</td><td>: {{ invoice.po_number|default:'-' }}</td></tr>
+                <tr><td>P.O. Date</td><td>: {{ invoice.po_date|format_date_indian|default:'-' }}</td></tr>
+                <tr><td>Party Mobile</td><td>: {{ invoice.customer_mobile|default:'-' }}</td></tr>
+                <tr><td>GST Treatment</td><td>: {% if invoice.is_interstate %}Interstate{% else %}Intrastate{% endif %}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="print-grid-2" style="margin-top:14px;">
+          <div class="print-meta-card">
+            <div class="print-section-title">Billed To</div>
+            <div class="print-line-name">{{ invoice.customer_name }}</div>
+            <div class="print-muted" style="white-space:pre-line; margin-top:4px;">{{ invoice.customer_address }}</div>
+            <div class="print-muted" style="margin-top:6px;">GSTIN / UIN: {{ invoice.customer_gstin|default:'-' }}</div>
+            <div class="print-muted">Mobile: {{ invoice.customer_mobile|default:'-' }}</div>
+          </div>
+          <div class="print-meta-card">
+            <div class="print-section-title">Shipped To</div>
+            <div class="print-line-name">{{ invoice.shipping_name|default:invoice.customer_name }}</div>
+            <div class="print-muted" style="white-space:pre-line; margin-top:4px;">{{ invoice.shipping_address|default:invoice.customer_address }}</div>
+            <div class="print-muted" style="margin-top:6px;">GSTIN / UIN: {{ invoice.customer_gstin|default:'-' }}</div>
+            <div class="print-muted">Mobile: {{ invoice.customer_mobile|default:'-' }}</div>
+          </div>
+        </div>
+
+        {% if invoice.irn %}
+          <div class="print-meta-card" style="margin-top:14px;">
+            <div class="print-section-title">IRN Details</div>
+            <div class="print-muted">IRN: {{ invoice.irn }}</div>
+            <div class="print-muted">Ack Date: {{ invoice.irn_generated_at|format_date_indian }}</div>
+          </div>
+        {% endif %}
+
+        <div style="margin-top:14px;">
+          <table class="print-line-table">
+            <thead>
+              <tr>
+                <th style="width: 4%;">#</th>
+                <th style="width: 36%;">Description of Goods</th>
+                <th style="width: 11%;">HSN/SAC</th>
+                <th style="width: 7%;">Qty</th>
+                <th style="width: 7%;">Unit</th>
+                <th style="width: 10%;">Price</th>
+                <th style="width: 10%;">Taxable</th>
+                {% if not invoice.is_interstate %}
+                  <th style="width: 7%;">CGST</th>
+                  <th style="width: 7%;">SGST</th>
+                {% else %}
+                  <th style="width: 14%;">IGST</th>
+                {% endif %}
+                <th style="width: 11%;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in invoice.line_items.all %}
+                <tr>
+                  <td class="center">{{ item.sr_no }}</td>
+                  <td>
+                    <div class="print-line-name">{{ item.product_name }}</div>
+                    {% if item.description %}<div class="print-muted">{{ item.description }}</div>{% endif %}
+                  </td>
+                  <td class="center">{{ item.hsn_code }}</td>
+                  <td class="right">{{ item.quantity|floatformat:"-3" }}</td>
+                  <td class="center">{{ item.unit }}</td>
+                  <td class="right">{{ item.unit_price|indian_rupee }}</td>
+                  <td class="right">{{ item.taxable_amount|indian_rupee }}</td>
+                  {% if not invoice.is_interstate %}
+                    <td class="right">{{ item.cgst_amount|indian_rupee }}<div class="print-muted">{{ item.cgst_rate }}%</div></td>
+                    <td class="right">{{ item.sgst_amount|indian_rupee }}<div class="print-muted">{{ item.sgst_rate }}%</div></td>
+                  {% else %}
+                    <td class="right">{{ item.igst_amount|indian_rupee }}<div class="print-muted">{{ item.igst_rate }}%</div></td>
+                  {% endif %}
+                  <td class="right"><strong>{{ item.line_total|indian_rupee }}</strong></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="print-total-box">
+          <div class="print-stack">
+            <div class="print-amount-words">{{ invoice.amount_in_words }}</div>
+            {% if invoice.notes %}
+              <div class="print-meta-card">
+                <div class="print-section-title">Notes</div>
+                <div class="print-muted" style="white-space:pre-line;">{{ invoice.notes }}</div>
+              </div>
+            {% endif %}
+            {% if invoice.terms_and_conditions %}
+              <div class="print-meta-card">
+                <div class="print-section-title">Terms &amp; Conditions</div>
+                <div class="print-muted" style="white-space:pre-line;">{{ invoice.terms_and_conditions }}</div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="print-stack">
+            <div class="print-meta-card">
+              <div class="print-section-title">Totals</div>
+              <div class="print-total-row"><span>Subtotal</span><strong>{{ invoice.subtotal|indian_rupee }}</strong></div>
+              {% if not invoice.is_interstate %}
+                <div class="print-total-row"><span>CGST</span><strong>{{ invoice.total_cgst|indian_rupee }}</strong></div>
+                <div class="print-total-row"><span>SGST</span><strong>{{ invoice.total_sgst|indian_rupee }}</strong></div>
+              {% else %}
+                <div class="print-total-row"><span>IGST</span><strong>{{ invoice.total_igst|indian_rupee }}</strong></div>
+              {% endif %}
+              {% if invoice.total_cess > 0 %}
+                <div class="print-total-row"><span>Cess</span><strong>{{ invoice.total_cess|indian_rupee }}</strong></div>
+              {% endif %}
+              {% if invoice.round_off != 0 %}
+                <div class="print-total-row"><span>Round Off</span><strong>{{ invoice.round_off|indian_rupee }}</strong></div>
+              {% endif %}
+              <div class="print-grand-total"><span>Grand Total</span><span>{{ invoice.grand_total|indian_rupee }}</span></div>
+            </div>
+
+            <div class="print-meta-card">
+              <div class="print-section-title">Tax Breakup</div>
+              <table class="print-summary-table">
+                <thead>
+                  <tr>
+                    <th>GST</th>
+                    <th class="right">Taxable</th>
+                    {% if not invoice.is_interstate %}
+                      <th class="right">CGST</th>
+                      <th class="right">SGST</th>
+                    {% else %}
+                      <th class="right">IGST</th>
+                    {% endif %}
+                    <th class="right">Tax</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in gst_breakdown %}
+                    <tr>
+                      <td class="center">{{ row.gst_rate }}%</td>
+                      <td class="right">{{ row.taxable_amount|indian_rupee }}</td>
+                      {% if not invoice.is_interstate %}
+                        <td class="right">{{ row.cgst_amount|indian_rupee }}</td>
+                        <td class="right">{{ row.sgst_amount|indian_rupee }}</td>
+                      {% else %}
+                        <td class="right">{{ row.igst_amount|indian_rupee }}</td>
+                      {% endif %}
+                      <td class="right">{{ row.total_tax|indian_rupee }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="print-footer-grid">
+          <div class="print-meta-card">
+            <div class="print-section-title">Bank Details</div>
+            {% if settings.show_bank_details and bank %}
+              <div class="print-muted">{{ bank.bank_name }}, {{ bank.branch_name }}</div>
+              <div class="print-muted">A/c No. {{ bank.account_number }}</div>
+              <div class="print-muted">IFSC: {{ bank.ifsc_code }}</div>
+              {% if bank.upi_id %}<div class="print-muted">UPI: {{ bank.upi_id }}</div>{% endif %}
+              {% if bank.qr_code_image and bank_qr_src %}
+                <div class="print-qr-box" style="margin-top:10px;"><img src="{{ bank_qr_src }}" alt="Bank QR" style="max-width: 88px; max-height: 88px;"></div>
+              {% endif %}
+            {% else %}
+              <div class="print-muted">No bank details configured.</div>
+            {% endif %}
+          </div>
+
+          <div class="print-meta-card">
+            <div class="print-section-title">Copy</div>
+            <div class="print-qr-box">{{ copy_label|upper }}</div>
+          </div>
+
+          <div class="print-meta-card">
+            <div class="print-section-title">Signature</div>
+            <div class="print-signature-box">
+              <div>Receiver's Signature</div>
+              <div style="height: 28px;"></div>
+              <div>for {{ company.company_name }}</div>
+              {% if settings.show_signature and company_signature_src %}
+                <div style="margin-top: 8px;"><img src="{{ company_signature_src }}" alt="Signature" style="max-height: 52px;"></div>
+              {% endif %}
+              <div class="print-signature-name">{{ company.authorised_signatory }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

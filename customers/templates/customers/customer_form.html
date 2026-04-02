@@ -1,0 +1,187 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+{% block title %}{% if is_edit %}Edit Party{% else %}New Party{% endif %}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{% url 'customers_ui:customer-list' %}">Parties</a>
+  <span class="breadcrumb-sep">/</span>
+  <span class="breadcrumb-current">{% if is_edit %}Edit: {{ customer.display_name|default:customer.name }}{% else %}New Party{% endif %}</span>
+</nav>
+
+<h1 class="page-heading mb-24">{% if is_edit %}Edit Party{% else %}New Party{% endif %}</h1>
+
+<form method="POST">
+  {% csrf_token %}
+  <div class="settings-grid">
+    <section class="card" x-data="{ gstin: '{{ form_data.gstin|default:customer.gstin|default:'' }}', updateFromGSTIN() { if (this.gstin.length === 15) { this.$refs.stateCode.value = this.gstin.slice(0,2); this.$refs.pan.value = this.gstin.slice(2,12); } } }">
+      <div class="card-header"><h2 class="card-title">Party Details</h2></div>
+
+      <div class="form-group mb-16">
+        <label class="form-label required">Party Type</label>
+        <select name="party_type" class="form-control {% if form_errors.party_type %}is-invalid{% endif %}" required>
+          {% for val, label in party_types %}
+            {% with selected=form_data.party_type|default:customer.party_type|default:'BUSINESS' %}
+              <option value="{{ val }}" {% if selected == val %}selected{% endif %}>{{ label }}</option>
+            {% endwith %}
+          {% endfor %}
+        </select>
+        {% if form_errors.party_type %}<span class="form-error">{{ form_errors.party_type }}</span>{% endif %}
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label required">Legal / Trade Name</label>
+        <input name="name" class="form-control {% if form_errors.name %}is-invalid{% endif %}" value="{{ form_data.name|default:customer.name|default:'' }}" required>
+        {% if form_errors.name %}<span class="form-error">{{ form_errors.name }}</span>{% endif %}
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Display Name (Short)</label>
+        <input name="display_name" class="form-control" value="{{ form_data.display_name|default:customer.display_name|default:'' }}" placeholder="Same as name if blank">
+        <span class="form-hint">Short name shown in lists and invoices</span>
+      </div>
+
+      <div class="grid-2 mb-16">
+        <div class="form-group">
+          <label class="form-label">GSTIN</label>
+          <input name="gstin" x-model="gstin" @input="updateFromGSTIN()" class="form-control {% if form_errors.gstin %}is-invalid{% endif %}" value="{{ form_data.gstin|default:customer.gstin|default:'' }}" style="text-transform:uppercase" maxlength="15">
+          <span class="form-hint">15-character GST number</span>
+          {% if form_errors.gstin %}<span class="form-error">{{ form_errors.gstin }}</span>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">PAN</label>
+          <input name="pan" x-ref="pan" class="form-control" value="{{ form_data.pan|default:customer.pan|default:'' }}" style="text-transform:uppercase" maxlength="10">
+          <span class="form-hint">Auto-filled from GSTIN</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2 class="card-title">Contact Details</h2></div>
+      <div class="form-group mb-16">
+        <label class="form-label required">Primary Mobile</label>
+        <input name="mobile_primary" type="tel" class="form-control" value="{{ form_data.mobile_primary|default:customer.mobile_primary|default:'' }}" required>
+      </div>
+      <div class="grid-2 mb-16">
+        <div class="form-group">
+          <label class="form-label">Secondary Mobile</label>
+          <input name="mobile_secondary" type="tel" class="form-control" value="{{ form_data.mobile_secondary|default:customer.mobile_secondary|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input name="email" type="email" class="form-control" value="{{ form_data.email|default:customer.email|default:'' }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Website</label>
+        <input name="website" type="url" class="form-control" value="{{ form_data.website|default:customer.website|default:'' }}">
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2 class="card-title">Credit & Payment</h2></div>
+      <div class="form-group mb-16">
+        <label class="form-label">Credit Limit (₹)</label>
+        <input name="credit_limit" type="number" min="0" step="0.01" class="form-control {% if form_errors.credit_limit %}is-invalid{% endif %}" value="{{ form_data.credit_limit|default:customer.credit_limit|default:'0' }}">
+        <span class="form-hint">0 = no credit limit</span>
+        {% if form_errors.credit_limit %}<span class="form-error">{{ form_errors.credit_limit }}</span>{% endif %}
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Payment Terms (days)</label>
+        <input name="payment_terms_days" type="number" min="0" class="form-control {% if form_errors.payment_terms_days %}is-invalid{% endif %}" value="{{ form_data.payment_terms_days|default:customer.payment_terms_days|default:'0' }}">
+        <span class="form-hint">0 = immediate, 30 = net 30 days</span>
+        {% if form_errors.payment_terms_days %}<span class="form-error">{{ form_errors.payment_terms_days }}</span>{% endif %}
+      </div>
+      {% if not is_edit %}
+      <div class="form-group mb-16">
+        <label class="form-label">Opening Balance (₹)</label>
+        <input name="opening_balance" type="number" step="0.01" class="form-control {% if form_errors.opening_balance %}is-invalid{% endif %}" value="{{ form_data.opening_balance|default:'0' }}">
+        <span class="form-hint">Positive = party owes you, Negative = you owe the party</span>
+        {% if form_errors.opening_balance %}<span class="form-error">{{ form_errors.opening_balance }}</span>{% endif %}
+      </div>
+      {% endif %}
+      <div class="form-group">
+        <label class="form-label">Internal Notes</label>
+        <textarea name="notes" class="form-control" rows="3">{{ form_data.notes|default:customer.notes|default:'' }}</textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2 class="card-title">Billing Address</h2></div>
+      <div class="form-group mb-16">
+        <label class="form-label required">Address Line 1</label>
+        <input name="billing_address_line1" class="form-control {% if form_errors.billing_address_line1 %}is-invalid{% endif %}" value="{{ form_data.billing_address_line1|default:customer.billing_address_line1|default:'' }}" required>
+        {% if form_errors.billing_address_line1 %}<span class="form-error">{{ form_errors.billing_address_line1 }}</span>{% endif %}
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Address Line 2</label>
+        <input name="billing_address_line2" class="form-control" value="{{ form_data.billing_address_line2|default:customer.billing_address_line2|default:'' }}">
+      </div>
+      <div class="grid-2 mb-16">
+        <div class="form-group">
+          <label class="form-label required">City</label>
+          <input name="billing_city" class="form-control {% if form_errors.billing_city %}is-invalid{% endif %}" value="{{ form_data.billing_city|default:customer.billing_city|default:'' }}" required>
+          {% if form_errors.billing_city %}<span class="form-error">{{ form_errors.billing_city }}</span>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label required">Pincode</label>
+          <input name="billing_pincode" class="form-control {% if form_errors.billing_pincode %}is-invalid{% endif %}" value="{{ form_data.billing_pincode|default:customer.billing_pincode|default:'' }}" required>
+          {% if form_errors.billing_pincode %}<span class="form-error">{{ form_errors.billing_pincode }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="grid-2 mb-16">
+        <div class="form-group">
+          <label class="form-label required">State</label>
+          <input name="billing_state" class="form-control {% if form_errors.billing_state %}is-invalid{% endif %}" value="{{ form_data.billing_state|default:customer.billing_state|default:'' }}" required>
+          {% if form_errors.billing_state %}<span class="form-error">{{ form_errors.billing_state }}</span>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label required">State Code</label>
+          <input name="billing_state_code" x-ref="stateCode" maxlength="2" placeholder="07" class="form-control {% if form_errors.billing_state_code %}is-invalid{% endif %}" value="{{ form_data.billing_state_code|default:customer.billing_state_code|default:'' }}" required>
+          {% if form_errors.billing_state_code %}<span class="form-error">{{ form_errors.billing_state_code }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Country</label>
+        <input name="billing_country" class="form-control" value="{{ form_data.billing_country|default:customer.billing_country|default:'India' }}">
+      </div>
+    </section>
+
+    <section class="card" x-data="{ sameAsBilling: {% if form_data.same_as_billing %}true{% elif is_edit %}{{ customer.same_as_billing|yesno:'true,false' }}{% else %}true{% endif %} }">
+      <div class="card-header"><h2 class="card-title">Shipping Address</h2></div>
+      <label class="toggle-switch">
+        <div class="toggle-label">
+          <div class="toggle-title">Same as Billing Address</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" name="same_as_billing" x-model="sameAsBilling" {% if customer.same_as_billing or not is_edit %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </label>
+
+      <div x-show="!sameAsBilling" x-transition style="margin-top:14px">
+        <div class="form-group mb-16"><label class="form-label">Address Line 1</label><input name="shipping_address_line1" class="form-control" value="{{ form_data.shipping_address_line1|default:customer.shipping_address_line1|default:'' }}"></div>
+        <div class="form-group mb-16"><label class="form-label">Address Line 2</label><input name="shipping_address_line2" class="form-control" value="{{ form_data.shipping_address_line2|default:customer.shipping_address_line2|default:'' }}"></div>
+        <div class="grid-2 mb-16">
+          <div class="form-group"><label class="form-label">City</label><input name="shipping_city" class="form-control" value="{{ form_data.shipping_city|default:customer.shipping_city|default:'' }}"></div>
+          <div class="form-group"><label class="form-label">Pincode</label><input name="shipping_pincode" class="form-control" value="{{ form_data.shipping_pincode|default:customer.shipping_pincode|default:'' }}"></div>
+        </div>
+        <div class="grid-2 mb-16">
+          <div class="form-group"><label class="form-label">State</label><input name="shipping_state" class="form-control" value="{{ form_data.shipping_state|default:customer.shipping_state|default:'' }}"></div>
+          <div class="form-group"><label class="form-label">State Code</label><input name="shipping_state_code" class="form-control" value="{{ form_data.shipping_state_code|default:customer.shipping_state_code|default:'' }}"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Country</label><input name="shipping_country" class="form-control" value="{{ form_data.shipping_country|default:customer.shipping_country|default:'India' }}"></div>
+      </div>
+
+      <div x-show="sameAsBilling" class="text-sm text-muted" style="padding:12px 0">
+        Shipping address same as billing address
+      </div>
+    </section>
+
+    <div class="full-width flex-between mt-24">
+      <a href="{% url 'customers_ui:customer-list' %}" class="btn btn-secondary">&larr; Cancel</a>
+      <button type="submit" class="btn btn-primary btn-lg">{% if is_edit %}Save Changes{% else %}Add Party{% endif %}</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

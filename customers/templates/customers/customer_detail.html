@@ -1,0 +1,203 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+{% block title %}{{ customer.display_name|default:customer.name }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{% url 'customers_ui:customer-list' %}">Parties</a>
+  <span class="breadcrumb-sep">/</span>
+  <span class="breadcrumb-current">{{ customer.display_name|default:customer.name }}</span>
+</nav>
+
+<div class="flex-between mb-24">
+  <div class="flex-center gap-16">
+    <div class="avatar avatar-lg" style="background:{{ customer.display_name|default:customer.name|first|lower|party_color }}">
+      {{ customer|initials }}
+    </div>
+    <div>
+      <h1 class="page-heading">{{ customer.display_name|default:customer.name }}</h1>
+      {% if customer.display_name and customer.display_name != customer.name %}
+      <div class="text-muted text-sm">{{ customer.name }}</div>
+      {% endif %}
+      <div class="flex-center gap-8 mt-8">
+        {% if customer.is_active %}
+          <span class="badge badge-green">Active</span>
+        {% else %}
+          <span class="badge badge-gray">Inactive</span>
+        {% endif %}
+
+        {% if customer.party_type == 'BUSINESS' %}
+          <span class="badge badge-navy">Business</span>
+        {% elif customer.party_type == 'INDIVIDUAL' %}
+          <span class="badge badge-blue">Individual</span>
+        {% else %}
+          <span class="badge badge-amber">Government</span>
+        {% endif %}
+
+        {% if customer.gstin %}
+          <span class="badge badge-navy font-mono">{{ customer.gstin }}</span>
+        {% endif %}
+
+        {% if customer.is_over_credit_limit %}
+          <span class="badge badge-red">Over Credit Limit</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="flex-center gap-8">
+    <a href="{% url 'customers_ui:customer-statement' customer.pk %}" class="btn btn-secondary">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-8.25A2.25 2.25 0 0 0 17.25 3.75H6.75A2.25 2.25 0 0 0 4.5 6v12a2.25 2.25 0 0 0 2.25 2.25h10.5A2.25 2.25 0 0 0 19.5 18v-3.75"/><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9h7.5m-7.5 3h4.5"/></svg>
+      Statement
+    </a>
+    <a href="{% url 'customers_ui:customer-edit' customer.pk %}" class="btn btn-primary">Edit Party</a>
+  </div>
+</div>
+
+<div class="grid-3 mb-24">
+  <div class="stat-card">
+    <div class="stat-label">Total Invoices</div>
+    <div class="stat-value">{{ invoice_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Business</div>
+    <div class="stat-value" style="font-size:18px">{{ invoice_total|indian_rupee }}</div>
+    <div class="stat-sub">Issued invoices only</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Outstanding</div>
+    <div class="stat-value" style="font-size:18px;color:{% if customer.current_balance > 0 %}var(--warning){% else %}var(--success){% endif %}">{{ customer.current_balance|indian_rupee }}</div>
+    <div class="stat-sub">
+      {% if customer.credit_limit > 0 %}
+        Limit: {{ customer.credit_limit|indian_rupee }}
+      {% else %}
+        No credit limit
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="settings-grid">
+  <div>
+    <section class="card mb-16">
+      <div class="card-header"><h2 class="card-title">Contact Information</h2></div>
+      <div class="kv-grid">
+        <div><span class="text-muted">Mobile (primary)</span><div>{{ customer.mobile_primary }}</div></div>
+        <div><span class="text-muted">Mobile (secondary)</span><div>{{ customer.mobile_secondary|default:"-" }}</div></div>
+        <div><span class="text-muted">Email</span><div>{{ customer.email|default:"-" }}</div></div>
+        <div><span class="text-muted">Website</span><div>{{ customer.website|default:"-" }}</div></div>
+        <div><span class="text-muted">Payment Terms</span><div>{% if customer.payment_terms_days == 0 %}Immediate{% else %}Net {{ customer.payment_terms_days }} days{% endif %}</div></div>
+      </div>
+    </section>
+
+    <section class="card mb-16">
+      <div class="card-header"><h2 class="card-title">Billing Address</h2></div>
+      <div class="text-sm">
+        {{ customer.billing_address_line1 }}<br>
+        {% if customer.billing_address_line2 %}{{ customer.billing_address_line2 }}<br>{% endif %}
+        {{ customer.billing_city }} - {{ customer.billing_pincode }}<br>
+        {{ customer.billing_state }} ({{ customer.billing_state_code }})<br>
+        {{ customer.billing_country }}
+      </div>
+    </section>
+
+    <section class="card mb-16">
+      <div class="card-header"><h2 class="card-title">Shipping Address</h2></div>
+      {% if customer.same_as_billing %}
+        <span class="text-muted text-sm">Same as billing address</span>
+      {% else %}
+        <div class="text-sm">
+          {{ customer.shipping_address_line1 }}<br>
+          {% if customer.shipping_address_line2 %}{{ customer.shipping_address_line2 }}<br>{% endif %}
+          {{ customer.shipping_city }} - {{ customer.shipping_pincode }}<br>
+          {{ customer.shipping_state }} ({{ customer.shipping_state_code }})<br>
+          {{ customer.shipping_country }}
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <span class="card-title">Recent Invoices</span>
+        <span class="text-xs text-muted">Latest 10 records</span>
+      </div>
+      {% if recent_invoices %}
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Invoice No.</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for inv in recent_invoices %}
+            <tr>
+              <td><span class="font-mono">{{ inv.invoice_number }}</span></td>
+              <td class="text-sm">{{ inv.invoice_date|date:"d M Y" }}</td>
+              <td class="font-mono">{{ inv.grand_total|indian_rupee }}</td>
+              <td>
+                {% if inv.status == 'ISSUED' %}
+                  <span class="badge badge-green">Issued</span>
+                {% elif inv.status == 'DRAFT' %}
+                  <span class="badge badge-amber">Draft</span>
+                {% else %}
+                  <span class="badge badge-gray">Cancelled</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:24px">No invoices yet for this party</div>
+      {% endif %}
+    </section>
+  </div>
+
+  <div>
+    <section class="card mb-16">
+      <div class="card-header"><span class="card-title">Contacts</span></div>
+      <div id="contacts-list" hx-get="{% url 'customers_ui:contact-create' customer.pk %}" hx-trigger="contactsChanged from:body" hx-swap="innerHTML">
+        {% include "customers/_contact_list.html" %}
+      </div>
+
+      <div class="divider"></div>
+      <div x-data="{ open: false }">
+        <button type="button" @click="open = !open" class="btn btn-sm btn-secondary w-full">Add Contact</button>
+        <form x-show="open" x-transition method="POST" hx-post="{% url 'customers_ui:contact-create' customer.pk %}" hx-target="#contacts-list" hx-swap="innerHTML" style="margin-top:12px">
+          {% csrf_token %}
+          <div class="form-group mb-8"><input name="name" class="form-control" placeholder="Contact name *" required></div>
+          <div class="grid-2 mb-8">
+            <input name="designation" class="form-control" placeholder="Designation">
+            <input name="mobile" class="form-control" placeholder="Mobile" type="tel">
+          </div>
+          <div class="form-group mb-8"><input name="email" class="form-control" placeholder="Email" type="email"></div>
+          <label class="filter-toggle mb-8"><input type="checkbox" name="is_primary"> Set as Primary Contact</label>
+          <div class="flex-center gap-8">
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+            <button type="button" @click="open = false" class="btn btn-sm btn-secondary">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><span class="card-title">Notes</span></div>
+      <div id="notes-list" hx-trigger="notesChanged from:body" hx-get="{% url 'customers_ui:note-create' customer.pk %}" hx-swap="innerHTML">
+        {% include "customers/_note_list.html" %}
+      </div>
+
+      <form method="POST" hx-post="{% url 'customers_ui:note-create' customer.pk %}" hx-target="#notes-list" hx-swap="innerHTML" style="margin-top:12px">
+        {% csrf_token %}
+        <div class="form-group mb-8">
+          <textarea name="note" class="form-control" rows="2" placeholder="Add an internal note..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary">Add Note</button>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}
