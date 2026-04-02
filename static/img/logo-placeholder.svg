@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="42" viewBox="0 0 180 42" fill="none">
+  <rect x="1" y="1" width="40" height="40" rx="8" fill="#1A3A5C"/>
+  <path d="M13 28V14H17V28H13ZM21 28V14H25V28H21ZM29 28V14H33V28H29Z" fill="#FFFFFF"/>
+  <text x="52" y="18" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#1A3A5C">INVOICE GENERATOR</text>
+  <text x="52" y="31" font-family="Inter, Arial, sans-serif" font-size="10" fill="#737373">Construction Edition</text>
+  <rect x="1" y="1" width="40" height="40" rx="8" stroke="#2D5986"/>
+</svg>

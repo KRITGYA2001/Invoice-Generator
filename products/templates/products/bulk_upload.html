@@ -1,0 +1,46 @@
+{% extends "base/base.html" %}
+{% block title %}Bulk Upload Products{% endblock %}
+
+{% block content %}
+<div class="text-sm text-muted mb-16"><a href="{% url 'products_ui:product-list' %}">Products</a> / Bulk Upload</div>
+<h1 class="page-heading mb-24">Bulk Upload Products (CSV)</h1>
+
+<div class="settings-grid">
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">Upload File</h2></div>
+    <p class="text-sm text-muted mb-16">Upload a CSV file in the required format. If any row has an error, no products will be imported.</p>
+
+    {% if row_errors %}
+    <div class="alert alert-danger mb-16">
+      Import failed. Fix the errors below and re-upload.
+      <ul class="error-list">
+        {% for err in row_errors %}
+        <li>Row {{ err.row_num }}{% if err.field %} ({{ err.field }}){% endif %}: {{ err.error }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group mb-16">
+        <label class="form-label required">CSV File</label>
+        <input type="file" name="csv_file" accept=".csv,text/csv" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Upload & Import</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">Template & Rules</h2></div>
+    <ol class="text-sm" style="padding-left:20px;line-height:1.8">
+      <li>Download and use the sample template.</li>
+      <li>Keep required columns filled: name, hsn_code, unit, selling_price, gst_rate.</li>
+      <li>Use exact unit short names (e.g., pcs, kg, ltr).</li>
+      <li>Use numeric values for prices and stock fields.</li>
+      <li>Optional category names will be auto-created if they do not exist.</li>
+    </ol>
+    <a href="{% url 'products_ui:csv-template' %}" class="btn btn-secondary mt-16">Download CSV Template</a>
+  </section>
+</div>
+{% endblock %}

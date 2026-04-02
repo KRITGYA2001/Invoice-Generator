@@ -1,0 +1,29 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+
+{% block title %}Company Settings{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-24">
+  <div>
+    <h1 class="page-heading">Company Settings</h1>
+    <p class="text-muted text-sm">Manage your business profile and invoice configuration</p>
+  </div>
+</div>
+
+<div class="tab-nav" x-data="{ tab: '{{ active_tab }}' }">
+  <div class="tab-list">
+    <a href="?tab=profile" class="tab-item {% if active_tab == 'profile' %}active{% endif %}">Company Profile</a>
+    <a href="?tab=bank" class="tab-item {% if active_tab == 'bank' %}active{% endif %}">Bank Details</a>
+    <a href="?tab=invoice" class="tab-item {% if active_tab == 'invoice' %}active{% endif %}">Invoice Settings</a>
+  </div>
+
+  {% if active_tab == 'profile' %}
+    {% include "company/_profile_form.html" %}
+  {% elif active_tab == 'bank' %}
+    {% include "company/_bank_section.html" %}
+  {% elif active_tab == 'invoice' %}
+    {% include "company/_invoice_settings_form.html" %}
+  {% endif %}
+</div>
+{% endblock %}

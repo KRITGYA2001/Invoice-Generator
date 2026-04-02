@@ -1,0 +1,37 @@
+<div class="modal-backdrop" x-data="{ open: true }" x-show="open" x-transition>
+  <div class="modal" @click.outside="open=false; $nextTick(() => document.getElementById('modal-container').innerHTML='')">
+    <div class="modal-header">
+      <h3>Manage Categories</h3>
+      <button type="button" class="icon-btn" @click="open=false; $nextTick(() => document.getElementById('modal-container').innerHTML='')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form hx-post="{% url 'products_ui:category-create' %}" hx-target="#modal-container" hx-swap="innerHTML" class="flex-center gap-8 mb-16">
+        {% csrf_token %}
+        <input type="text" name="name" class="form-control" placeholder="New category name" required>
+        <button type="submit" class="btn btn-primary">Add</button>
+      </form>
+
+      <div id="category-list" class="category-list-scroll">
+        {% for category in categories %}
+        <div class="category-list-item">
+          <span>{{ category.name }}</span>
+          <button class="btn btn-sm btn-danger" type="button"
+                  hx-post="{% url 'products_ui:category-delete' category.pk %}"
+                  hx-target="#modal-container"
+                  hx-swap="innerHTML"
+                  hx-confirm="Delete category {{ category.name }}?">Delete</button>
+        </div>
+        {% empty %}
+        <div class="text-sm text-muted">No categories yet.</div>
+        {% endfor %}
+      </div>
+
+      <div class="modal-actions mt-16">
+        <button type="button" class="btn btn-secondary" @click="open=false; $nextTick(() => document.getElementById('modal-container').innerHTML='')">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

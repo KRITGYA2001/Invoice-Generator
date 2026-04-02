@@ -1,0 +1,19 @@
+<div class="flex-between mb-16">
+  <div>
+    <h3 class="card-title">Bank Accounts</h3>
+    <p class="text-muted text-sm">Bank details appear on invoices for payment</p>
+  </div>
+  <button class="btn btn-primary"
+          hx-get="{% url 'company_ui:bank-create' %}"
+          hx-target="#modal-container"
+          hx-swap="innerHTML">
+    + Add Bank Account
+  </button>
+</div>
+
+<div id="bank-list"
+     hx-get="{% url 'company_ui:bank-list' %}"
+     hx-trigger="load, bankListChanged from:body"
+     hx-swap="innerHTML">
+  {% include "company/_bank_list.html" %}
+</div>

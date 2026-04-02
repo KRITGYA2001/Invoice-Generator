@@ -1,0 +1,24 @@
+{% url 'accounts_ui:profile' as profile_url %}
+{% url 'company_ui:profile' as company_url %}
+{% url 'accounts_ui:logout' as logout_url %}
+<div class="flex-center gap-12">
+  <span class="topbar-title">{{ page_title|default:"Overview" }}</span>
+</div>
+<div class="flex-center gap-12">
+  <button class="btn btn-icon btn-secondary" type="button" aria-label="Notifications">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 1-2.857.168 23.847 23.847 0 0 1-2.857-.168m5.714 0a3 3 0 1 1-5.714 0m5.714 0a22.868 22.868 0 0 0 2.003-.234A2.25 2.25 0 0 0 18.75 14.603V11.25a6.75 6.75 0 1 0-13.5 0v3.353c0 1.08.768 2.007 1.853 2.245a22.868 22.868 0 0 0 2.003.234"/></svg>
+  </button>
+
+  <div x-data="{ open: false }" style="position: relative;">
+    <button class="btn btn-secondary" @click="open = !open" type="button">
+      {{ request.user.get_full_name|default:request.user.email }}
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+    </button>
+    <div x-show="open" @click.outside="open = false" class="dropdown-menu" x-transition>
+      <a href="{{ profile_url|default:'#' }}" class="dropdown-item">Profile</a>
+      <a href="{{ company_url|default:'#' }}" class="dropdown-item">Company Settings</a>
+      <div class="divider"></div>
+      <a href="{{ logout_url|default:'/logout/' }}" class="dropdown-item text-danger">Logout</a>
+    </div>
+  </div>
+</div>

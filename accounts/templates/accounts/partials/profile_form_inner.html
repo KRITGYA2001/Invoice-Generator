@@ -1,0 +1,21 @@
+{% csrf_token %}
+<div class="form-group mb-16">
+  <label class="form-label required" for="id_first_name">First Name</label>
+  <input id="id_first_name" class="form-control" type="text" name="first_name" value="{{ user_obj.first_name }}" required>
+</div>
+<div class="form-group mb-16">
+  <label class="form-label required" for="id_last_name">Last Name</label>
+  <input id="id_last_name" class="form-control" type="text" name="last_name" value="{{ user_obj.last_name }}" required>
+</div>
+<div class="form-group mb-16">
+  <label class="form-label" for="id_phone">Phone</label>
+  <input id="id_phone" class="form-control" type="tel" name="phone" value="{{ user_obj.phone }}">
+</div>
+<div class="form-group mb-24">
+  <label class="form-label" for="id_email_locked">Email</label>
+  <input id="id_email_locked" class="form-control" type="email" value="{{ user_obj.email }}" disabled>
+</div>
+<button type="submit" class="btn btn-primary">
+  Save Changes
+  {% include "components/_loading.html" %}
+</button>

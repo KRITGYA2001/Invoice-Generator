@@ -1,0 +1,66 @@
+<div class="modal-backdrop" x-data="{ open: true }" x-show="open" x-transition>
+  <div class="modal" @click.outside="open=false; $nextTick(() => document.getElementById('modal-container').innerHTML='')">
+    <div class="modal-header">
+      <h3>Adjust Stock: {{ product.name }}</h3>
+      <button type="button" class="icon-btn" @click="open=false; $nextTick(() => document.getElementById('modal-container').innerHTML='')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="info-box mb-16">
+        <div class="flex-between"><span>Current Stock</span><strong>{{ product.current_stock|floatformat:"-3" }} {{ product.unit.short_name }}</strong></div>
+      </div>
+
+      <form method="POST"
+            hx-post="{% url 'products_ui:stock-adjust' product.pk %}"
+            hx-target="#modal-container"
+            hx-swap="innerHTML"
+            hx-on::after-request="if(event.detail.successful){document.getElementById('modal-container').innerHTML='';}">
+        {% csrf_token %}
+
+        {% if form_errors.non_field_errors %}
+          <div class="alert alert-danger mb-16">{{ form_errors.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-group mb-16">
+          <label class="form-label required">Action</label>
+          <select name="action" class="form-control {% if form_errors.action %}is-invalid{% endif %}" required>
+            <option value="add" {% if form_data.action == 'add' %}selected{% endif %}>Add stock</option>
+            <option value="subtract" {% if form_data.action == 'subtract' %}selected{% endif %}>Subtract stock</option>
+            <option value="set" {% if form_data.action == 'set' %}selected{% endif %}>Set exact stock</option>
+          </select>
+          {% if form_errors.action %}<span class="form-error">{{ form_errors.action }}</span>{% endif %}
+        </div>
+
+        <div class="form-group mb-16">
+          <label class="form-label required">Quantity</label>
+          <input type="number" step="0.001" min="0" name="quantity" class="form-control {% if form_errors.quantity %}is-invalid{% endif %}" value="{{ form_data.quantity|default:'' }}" required>
+          {% if form_errors.quantity %}<span class="form-error">{{ form_errors.quantity }}</span>{% endif %}
+        </div>
+
+        <div class="form-group mb-16">
+          <label class="form-label">Reason</label>
+          <select name="reason" class="form-control">
+            <option value="">Select reason (optional)</option>
+            <option value="Purchase" {% if form_data.reason == 'Purchase' %}selected{% endif %}>Purchase</option>
+            <option value="Sales Return" {% if form_data.reason == 'Sales Return' %}selected{% endif %}>Sales Return</option>
+            <option value="Damaged" {% if form_data.reason == 'Damaged' %}selected{% endif %}>Damaged</option>
+            <option value="Stock Count Correction" {% if form_data.reason == 'Stock Count Correction' %}selected{% endif %}>Stock Count Correction</option>
+            <option value="Manual Update" {% if form_data.reason == 'Manual Update' %}selected{% endif %}>Manual Update</option>
+          </select>
+        </div>
+
+        <div class="form-group mb-16">
+          <label class="form-label">Notes</label>
+          <textarea name="notes" rows="2" class="form-control">{{ form_data.notes|default:'' }}</textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" @click="open=false; $nextTick(() => document.getElementById('modal-container').innerHTML='')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Stock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

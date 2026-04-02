@@ -1,0 +1,25 @@
+@media print {
+  .sidebar,
+  .topbar,
+  .btn,
+  .alert,
+  #modal-container {
+    display: none !important;
+  }
+
+  .app-layout {
+    display: block;
+  }
+
+  .main-content {
+    padding: 0;
+    background: #fff;
+  }
+
+  .card,
+  .stat-card {
+    box-shadow: none;
+    border-color: #ddd;
+    break-inside: avoid;
+  }
+}

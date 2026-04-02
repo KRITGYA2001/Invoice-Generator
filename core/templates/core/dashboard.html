@@ -1,0 +1,162 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+{% block extra_head %}
+<script src="{% static 'js/vendor/chart.umd.min.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-24">
+  <div>
+    <h1 class="card-title">Dashboard</h1>
+    <p class="text-sm text-muted">Financial year {{ overview.financial_year }}</p>
+  </div>
+</div>
+
+<div class="grid-4 mb-24">
+  <div class="stat-card">
+    <div class="stat-label">Total Revenue</div>
+    <div class="stat-value">{{ overview.revenue.total_revenue }}</div>
+    <div class="stat-sub">Issued invoices only</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Tax</div>
+    <div class="stat-value">{{ overview.revenue.total_tax }}</div>
+    <div class="stat-sub">Collected in FY</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Issued Invoices</div>
+    <div class="stat-value">{{ overview.invoices.issued }}</div>
+    <div class="stat-sub">Out of {{ overview.invoices.total }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Customers</div>
+    <div class="stat-value">{{ overview.customers.total }}</div>
+    <div class="stat-sub">{{ overview.customers.active }} active</div>
+  </div>
+</div>
+
+<div class="grid-2 mb-24">
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">Monthly Revenue Trend</h2>
+    </div>
+    <div style="height: 320px;">
+      <canvas id="trend-chart"></canvas>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">Top Customers</h2>
+    </div>
+    {% if overview.top_customers %}
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Invoices</th>
+              <th class="text-right">Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in overview.top_customers %}
+              <tr>
+                <td>{{ row.customer_name }}</td>
+                <td>{{ row.invoice_count }}</td>
+                <td class="text-right font-mono">{{ row.total_revenue }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/_empty_state.html" with title="No customer sales yet" description="Issued invoices will appear here." %}
+    {% endif %}
+  </section>
+</div>
+
+<div class="grid-2">
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">Recent Invoices</h2>
+    </div>
+    {% if overview.recent_invoices %}
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for inv in overview.recent_invoices %}
+              <tr>
+                <td>{{ inv.invoice_number }}</td>
+                <td>{{ inv.invoice_date }}</td>
+                <td>{{ inv.customer_name }}</td>
+                <td class="text-right font-mono">{{ inv.grand_total }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/_empty_state.html" with title="No invoices yet" description="Your recent issued invoices will be shown here." %}
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">Low Stock Alerts</h2>
+    </div>
+    {% if overview.low_stock_alerts %}
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Stock</th>
+              <th>Minimum</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for product in overview.low_stock_alerts %}
+              <tr>
+                <td>{{ product.name }}</td>
+                <td class="font-mono">{{ product.current_stock }}</td>
+                <td class="font-mono">{{ product.minimum_stock }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/_empty_state.html" with title="Inventory healthy" description="No low-stock items at the moment." %}
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/charts.js' %}"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const months = [
+      {% for item in trend.months %}"{{ item.month }}"{% if not forloop.last %}, {% endif %}{% endfor %}
+    ];
+    const revenue = [
+      {% for item in trend.months %}{{ item.revenue }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    ];
+    const invoices = [
+      {% for item in trend.months %}{{ item.invoice_count }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    ];
+    window.buildRevenueTrendChart("trend-chart", months, revenue, invoices);
+  });
+</script>
+{% endblock %}

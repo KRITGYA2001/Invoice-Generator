@@ -1,0 +1,74 @@
+{% if bank_details %}
+  <div class="bank-cards">
+    {% for bank in bank_details %}
+      <div class="bank-card {% if bank.is_primary %}primary{% endif %}">
+        <div class="flex-between">
+          <div class="flex-center gap-8">
+            <div class="bank-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 8.25h15m-14.25 0V6.75L12 3l6.75 3.75v1.5m-12 0v9m3-9v9m3-9v9m3-9v9m3-9v9"/>
+              </svg>
+            </div>
+            <div>
+              <div class="font-bold">{{ bank.bank_name }}</div>
+              <div class="text-sm text-muted">{{ bank.branch_name }}</div>
+            </div>
+          </div>
+          <div class="flex-center gap-8">
+            {% if bank.is_primary %}
+              <span class="badge badge-green">Primary</span>
+            {% else %}
+              <button class="btn btn-sm btn-secondary"
+                      hx-post="{% url 'company_ui:bank-set-primary' bank.id %}"
+                      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                      hx-target="body"
+                      hx-swap="none">
+                Set Primary
+              </button>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="bank-details-grid">
+          <div>
+            <div class="text-xs text-muted">Account Number</div>
+            <div class="font-mono">{{ bank.account_number }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted">IFSC Code</div>
+            <div class="font-mono">{{ bank.ifsc_code }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted">Account Type</div>
+            <div>{{ bank.get_account_type_display }}</div>
+          </div>
+          {% if bank.upi_id %}
+          <div>
+            <div class="text-xs text-muted">UPI ID</div>
+            <div>{{ bank.upi_id }}</div>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="flex-center gap-8" style="margin-top:12px">
+          <button class="btn btn-sm btn-secondary"
+                  hx-get="{% url 'company_ui:bank-edit' bank.id %}"
+                  hx-target="#modal-container"
+                  hx-swap="innerHTML">
+            Edit
+          </button>
+          <button class="btn btn-sm btn-danger"
+                  hx-post="{% url 'company_ui:bank-delete' bank.id %}"
+                  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                  hx-confirm="Delete this bank account?"
+                  hx-target="body"
+                  hx-swap="none">
+            Delete
+          </button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  {% include "components/_empty_state.html" with title="No bank accounts added yet" description="Add a bank account to display on invoices" %}
+{% endif %}

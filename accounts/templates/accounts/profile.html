@@ -1,0 +1,46 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <section class="card">
+    <div class="flex-center gap-16 mb-16">
+      <div class="avatar avatar-lg">{{ user_obj|initials }}</div>
+      <div>
+        <h1 class="card-title" style="font-size: var(--text-xl);">{{ user_obj.get_full_name|default:user_obj.email }}</h1>
+        <p class="text-sm text-muted flex-center gap-8 mt-8">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 0h10.5a2.25 2.25 0 0 1 2.25 2.25v5.25a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 18v-5.25a2.25 2.25 0 0 1 2.25-2.25Z"/></svg>
+          {{ user_obj.email }}
+        </p>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <p class="text-sm text-muted">Date joined: {{ user_obj.date_joined|date:"d M Y" }}</p>
+    <p class="text-sm text-muted">Member since: {{ member_since_days }} days</p>
+
+    <section class="card mt-24">
+      <div class="card-header">
+        <h2 class="card-title">Security</h2>
+      </div>
+      <p class="text-sm text-muted mb-16">Password - Last changed: unknown</p>
+      <a href="{% url 'accounts_ui:change-password' %}" class="btn btn-secondary">Change Password</a>
+    </section>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">Personal Information</h2>
+    </div>
+    <form method="POST"
+          hx-post="{% url 'accounts_ui:profile' %}"
+          hx-target="#profile-form-container"
+          hx-swap="innerHTML"
+          id="profile-form-container">
+      {% csrf_token %}
+      {% include "accounts/partials/profile_form_inner.html" %}
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-24">
+  <div>
+    <h1 class="page-heading">Product Catalog</h1>
+    <p class="text-muted text-sm">
+      {{ stock_summary.total_products }} products ·
+      <span class="text-danger">{{ stock_summary.low_stock_count }} low stock</span>
+    </p>
+  </div>
+  <div class="flex-center gap-8">
+    <a href="{% url 'products_ui:bulk-upload' %}" class="btn btn-secondary">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V3m0 0-4.5 4.5M12 3l4.5 4.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5"/></svg>
+      Import CSV
+    </a>
+    <a href="{% url 'products_ui:product-create' %}" class="btn btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+      Add Product
+    </a>
+  </div>
+</div>
+
+<div class="grid-4 mb-24">
+  <div class="stat-card"><div class="stat-label">Total Products</div><div class="stat-value">{{ stock_summary.total_products }}</div></div>
+  <div class="stat-card"><div class="stat-label">Active Products</div><div class="stat-value">{{ stock_summary.active_products }}</div></div>
+  <div class="stat-card"><div class="stat-label">Low Stock</div><div class="stat-value" style="color:var(--danger)">{{ stock_summary.low_stock_count }}</div><div class="stat-sub">Below minimum level</div></div>
+  <div class="stat-card"><div class="stat-label">Stock Value</div><div class="stat-value" style="font-size:16px">{{ stock_summary.total_stock_value|indian_rupee }}</div><div class="stat-sub">At purchase price</div></div>
+</div>
+
+{% if stock_summary.low_stock_count > 0 %}
+<div class="alert alert-warning mb-16" x-data="{ show: true }" x-show="show" x-transition>
+  <span>{{ stock_summary.low_stock_count }} products are at or below minimum stock level.</span>
+  <a href="?low_stock=true" class="font-bold">View them</a>
+  <button type="button" class="alert-dismiss" @click="show=false" aria-label="Dismiss warning">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+  </button>
+</div>
+{% endif %}
+
+<div class="card mb-16">
+  <form method="GET" class="filter-form">
+    <div class="filter-row">
+      <div class="filter-search">
+        <input type="search" name="search" value="{{ current_filters.search|default:'' }}" placeholder="Search name, SKU, HSN..." class="form-control"
+               hx-get="{% url 'products_ui:product-list' %}"
+               hx-target="#product-table-container"
+               hx-trigger="input changed delay:400ms"
+               hx-include="closest form"
+               hx-push-url="true">
+      </div>
+
+      <select name="category" class="form-control" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}" {% if current_filters.category == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="gst_rate" class="form-control" onchange="this.form.submit()">
+        <option value="">All GST Rates</option>
+        {% for rate in gst_rates %}
+        <option value="{{ rate }}" {% if current_filters.gst_rate == rate|stringformat:'s' %}selected{% endif %}>{{ rate }}%</option>
+        {% endfor %}
+      </select>
+
+      <label class="filter-toggle">
+        <input type="checkbox" name="low_stock" value="true" {% if current_filters.low_stock %}checked{% endif %} onchange="this.form.submit()">
+        Low Stock Only
+      </label>
+
+      <label class="filter-toggle">
+        <input type="checkbox" name="is_active" value="false" {% if current_filters.is_active == 'false' %}checked{% endif %} onchange="this.form.submit()">
+        Show Inactive
+      </label>
+
+      {% if current_filters.search or current_filters.category or current_filters.gst_rate or current_filters.low_stock or current_filters.is_active %}
+        <a href="{% url 'products_ui:product-list' %}" class="btn btn-sm btn-secondary">Clear Filters</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div id="product-table-container">
+  {% include "products/_product_table.html" %}
+</div>
+{% endblock %}

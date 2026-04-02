@@ -1,0 +1,17 @@
+{% if pagination and pagination.total_pages > 1 %}
+<div class="pagination">
+  {% if pagination.page > 1 %}
+    <a class="page-item" href="?page={{ pagination.page|add:'-1' }}">&laquo;</a>
+  {% else %}
+    <span class="page-item disabled">&laquo;</span>
+  {% endif %}
+
+  <span class="page-item active">{{ pagination.page }}</span>
+
+  {% if pagination.page < pagination.total_pages %}
+    <a class="page-item" href="?page={{ pagination.page|add:'1' }}">&raquo;</a>
+  {% else %}
+    <span class="page-item disabled">&raquo;</span>
+  {% endif %}
+</div>
+{% endif %}

@@ -1,0 +1,15 @@
+<div class="modal-backdrop" x-data="{ open: true }" x-show="open" x-transition>
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ title|default:"Confirm Action" }}</h3>
+      <button class="btn btn-icon btn-secondary" type="button" @click="open=false">x</button>
+    </div>
+    <div class="modal-body">
+      <p>{{ message|default:"Are you sure you want to continue?" }}</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" @click="open=false">Cancel</button>
+      <button type="button" class="btn btn-danger">Confirm</button>
+    </div>
+  </div>
+</div>

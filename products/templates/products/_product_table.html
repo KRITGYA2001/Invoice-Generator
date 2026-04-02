@@ -1,0 +1,96 @@
+{% load ui_tags %}
+<div class="card">
+  {% if products %}
+    <div class="table-sort-bar">
+      <span class="text-xs text-muted">{{ pagination.total }} products</span>
+      <div class="flex-center gap-8">
+        <span class="text-xs text-muted">Sort by:</span>
+        <a href="?{{ query_string }}{% if query_string %}&{% endif %}ordering=name" class="sort-link {% if ordering == 'name' %}active{% endif %}">Name</a>
+        <a href="?{{ query_string }}{% if query_string %}&{% endif %}ordering=selling_price" class="sort-link {% if ordering == 'selling_price' %}active{% endif %}">Price</a>
+        <a href="?{{ query_string }}{% if query_string %}&{% endif %}ordering=current_stock" class="sort-link {% if ordering == 'current_stock' %}active{% endif %}">Stock</a>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>HSN Code</th>
+            <th>Category</th>
+            <th>Unit</th>
+            <th>Selling Price</th>
+            <th>GST</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for product in products %}
+          <tr class="{% if not product.is_active %}row-inactive{% endif %}">
+            <td>
+              <div class="product-name-cell">
+                {% if product.image %}
+                  <img src="{{ product.image.url }}" class="product-thumb" alt="{{ product.name }}">
+                {% else %}
+                  <div class="product-thumb-placeholder">{{ product.name|first|upper }}</div>
+                {% endif %}
+                <div>
+                  <a href="{% url 'products_ui:product-detail' product.pk %}" class="font-bold text-link">{{ product.name }}</a>
+                  {% if product.sku %}
+                    <div class="text-xs text-muted font-mono">SKU: {{ product.sku }}</div>
+                  {% endif %}
+                  {% if product.is_service %}<span class="badge badge-blue" style="font-size:10px">Service</span>{% endif %}
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-sm">{{ product.hsn_code }}</td>
+            <td>{% if product.category %}<span class="tag">{{ product.category.name }}</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+            <td>{{ product.unit.short_name|default:"-" }}</td>
+            <td class="font-mono">{{ product.selling_price|indian_rupee }}</td>
+            <td><span class="badge badge-blue">{{ product.gst_rate }}%</span></td>
+            <td>
+              {% if product.track_inventory %}
+                <div class="stock-cell">
+                  <span class="font-mono {% if product.is_low_stock %}text-danger font-bold{% endif %}">{{ product.current_stock|floatformat:"-3" }} {{ product.unit.short_name }}</span>
+                  {% if product.is_low_stock %}<span class="badge badge-red" style="font-size:10px">Low</span>{% endif %}
+                </div>
+                {% if product.maximum_stock %}
+                <div class="stock-bar">
+                  <div class="stock-bar-fill {% if product.is_low_stock %}danger{% else %}normal{% endif %}" style="width:{% widthratio product.current_stock product.maximum_stock 100 %}%"></div>
+                </div>
+                {% endif %}
+              {% else %}
+                <span class="badge badge-gray">Not tracked</span>
+              {% endif %}
+            </td>
+            <td>{% if product.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-gray">Inactive</span>{% endif %}</td>
+            <td class="actions-col">
+              <div class="flex-center gap-6">
+                <button type="button" class="btn btn-sm btn-secondary" title="Adjust Stock"
+                        hx-get="{% url 'products_ui:stock-adjust' product.pk %}"
+                        hx-target="#modal-container"
+                        hx-swap="innerHTML">± Stock</button>
+                <a href="{% url 'products_ui:product-edit' product.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+                <button type="button" class="btn btn-sm btn-danger"
+                        hx-post="{% url 'products_ui:product-delete' product.pk %}"
+                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                        hx-confirm="Deactivate {{ product.name }}?"
+                        hx-target="closest tr"
+                        hx-swap="outerHTML">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/_pagination.html" with pagination=pagination %}
+  {% else %}
+    {% include "components/_empty_state.html" with title="No products found" description="Add your first product or import from CSV" %}
+  {% endif %}
+</div>

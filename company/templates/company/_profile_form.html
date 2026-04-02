@@ -1,0 +1,85 @@
+<form method="POST" action="{% url 'company_ui:profile' %}?tab=profile" enctype="multipart/form-data" x-data="{ gstin: '{{ company.gstin|default:'' }}', logoPreview: null, signPreview: null }">
+  {% csrf_token %}
+
+  <div class="settings-grid">
+    <div class="card section-gap">
+      <div class="card-header"><h3 class="card-title">Business Identity</h3></div>
+      <div class="form-group mb-16"><label class="form-label required">Company Name</label><input name="company_name" class="form-control" value="{{ company.company_name }}" required></div>
+      <div class="grid-2 mb-16">
+        <div class="form-group"><label class="form-label">Trade Name</label><input name="trade_name" class="form-control" value="{{ company.trade_name|default:'' }}"></div>
+        <div class="form-group"><label class="form-label">Logo Text</label><input name="logo_text" class="form-control" maxlength="6" value="{{ company.logo_text|default:'' }}"><span class="form-hint">Short code shown when no logo e.g. SSI</span></div>
+      </div>
+      <div class="form-group mb-16"><label class="form-label">Unit Division</label><input name="unit_division" class="form-control" value="{{ company.unit_division|default:'' }}"></div>
+
+      <div x-data="{ preview: null }" class="mb-16">
+        <div class="logo-preview">
+          {% if company.logo %}
+            <img src="{{ company.logo.url }}" alt="Company Logo" x-show="!preview">
+          {% else %}
+            <div class="logo-placeholder" x-show="!preview">{{ company.logo_text|default:'LOGO' }}</div>
+          {% endif %}
+          <img x-show="preview" :src="preview" class="logo-preview-img" alt="Logo preview">
+        </div>
+        <label class="file-upload-btn" for="id_logo">Upload Logo</label>
+        <input id="id_logo" name="logo" type="file" accept="image/*" @change="preview = URL.createObjectURL($event.target.files[0])">
+      </div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-header"><h3 class="card-title">Registration & Tax</h3></div>
+      <div class="grid-2 mb-16">
+        <div class="form-group"><label class="form-label">GSTIN</label><input name="gstin" x-model="gstin" @input="if(gstin.length===15){ document.getElementById('id_state_code').value=gstin.slice(0,2); document.getElementById('id_pan').value=gstin.slice(2,12);}" class="form-control" value="{{ company.gstin|default:'' }}"><span class="form-hint">15-character GST registration number</span></div>
+        <div class="form-group"><label class="form-label">PAN</label><input id="id_pan" name="pan" class="form-control" value="{{ company.pan|default:'' }}"></div>
+      </div>
+      <div class="form-group mb-16"><label class="form-label">UDYAM Number</label><input name="udyam_number" class="form-control" value="{{ company.udyam_number|default:'' }}"></div>
+      <div class="flex-center gap-8"><input type="checkbox" id="id_is_msme" name="is_msme" {% if company.is_msme %}checked{% endif %}><label for="id_is_msme" class="text-sm">MSME Registered</label></div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-header"><h3 class="card-title">Registered Address</h3></div>
+      <div class="form-group mb-16"><label class="form-label">Address Line 1</label><input name="address_line1" class="form-control" value="{{ company.address_line1|default:'' }}"></div>
+      <div class="form-group mb-16"><label class="form-label">Address Line 2</label><input name="address_line2" class="form-control" value="{{ company.address_line2|default:'' }}"></div>
+      <div class="grid-2 mb-16">
+        <div class="form-group"><label class="form-label">City</label><input name="city" class="form-control" value="{{ company.city|default:'' }}"></div>
+        <div class="form-group"><label class="form-label">Pincode</label><input name="pincode" class="form-control" value="{{ company.pincode|default:'' }}"></div>
+      </div>
+      <div class="grid-2 mb-16">
+        <div class="form-group"><label class="form-label">State</label><input name="state" class="form-control" value="{{ company.state|default:'' }}"></div>
+        <div class="form-group"><label class="form-label">State Code</label><input id="id_state_code" name="state_code" class="form-control" value="{{ company.state_code|default:'' }}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Country</label><input name="country" class="form-control" value="{{ company.country|default:'India' }}"></div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-header"><h3 class="card-title">Contact Information</h3></div>
+      <div class="grid-2 mb-16">
+        <div class="form-group"><label class="form-label required">Primary Mobile</label><input name="mobile_primary" class="form-control" value="{{ company.mobile_primary|default:'' }}" required></div>
+        <div class="form-group"><label class="form-label">Secondary Mobile</label><input name="mobile_secondary" class="form-control" value="{{ company.mobile_secondary|default:'' }}"></div>
+      </div>
+      <div class="form-group mb-16"><label class="form-label">Email</label><input name="email" type="email" class="form-control" value="{{ company.email|default:'' }}"></div>
+      <div class="form-group mb-16"><label class="form-label">Website</label><input name="website" class="form-control" value="{{ company.website|default:'' }}"></div>
+
+      <div class="divider"></div>
+      <div class="card-header"><h3 class="card-title">Authorised Signatory</h3></div>
+      <div class="form-group mb-16"><label class="form-label">Signatory Name</label><input name="authorised_signatory" class="form-control" value="{{ company.authorised_signatory|default:'' }}"></div>
+
+      <div x-data="{ sigPreview: null }" class="mb-16">
+        <div class="logo-preview">
+          {% if company.signature_image %}
+            <img src="{{ company.signature_image.url }}" alt="Signature" x-show="!sigPreview">
+          {% else %}
+            <div class="logo-placeholder" x-show="!sigPreview">SIG</div>
+          {% endif %}
+          <img x-show="sigPreview" :src="sigPreview" class="logo-preview-img" alt="Signature preview">
+        </div>
+        <label class="file-upload-btn" for="id_signature_image">Upload Signature</label>
+        <input id="id_signature_image" name="signature_image" type="file" accept="image/*" @change="sigPreview = URL.createObjectURL($event.target.files[0])">
+      </div>
+    </div>
+
+    <div class="full-width flex-between mt-24">
+      <span class="text-muted text-sm">Last updated: {{ company.updated_at|date:"d M Y, H:i" }}</span>
+      <button type="submit" class="btn btn-primary btn-lg">Save Company Profile</button>
+    </div>
+  </div>
+</form>

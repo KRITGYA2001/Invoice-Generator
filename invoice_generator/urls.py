@@ -19,9 +19,18 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path("unsecured-admin/", admin.site.urls),
-    path("auth/", include("accounts.urls")),
-    path("company/", include("company.urls")),
-    path("products/", include("products.urls")),
+    path("admin/", admin.site.urls),
+    path("api/auth/", include("accounts.urls")),
+    path("api/company/", include("company.urls")),
+    path("api/products/", include("products.urls")),
+    path("api/customers/", include("customers.urls")),
     path("api/invoices/", include("invoices.urls")),
+    path("api/reports/", include("reports.urls")),
+    path("", include("core.urls", namespace="core")),
+    path("accounts/", include("accounts.urls_ui", namespace="accounts_ui")),
+    path("company/", include("company.urls_ui", namespace="company_ui")),
+    path("products/", include("products.urls_ui", namespace="products_ui")),
+    path("customers/", include("customers.urls_ui", namespace="customers_ui")),
+    path("invoices/", include("invoices.urls_ui", namespace="invoices_ui")),
+    path("reports/", include("reports.urls_ui", namespace="reports_ui")),
 ]

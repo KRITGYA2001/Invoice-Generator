@@ -1,0 +1,29 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Sign in{% endblock %} - Invoice Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+  <script src="{% static 'js/vendor/alpine.min.js' %}" defer></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="auth-body">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">{% block logo_text %}IV{% endblock %}</div>
+        <h1>Invoice Generator</h1>
+        <p>{% block auth_subtitle %}{% endblock %}</p>
+      </div>
+      {% include "base/_messages.html" %}
+      {% block auth_content %}{% endblock %}
+    </div>
+    <p class="auth-footer">Construction Edition - Powered by Django</p>
+  </div>
+</body>
+</html>

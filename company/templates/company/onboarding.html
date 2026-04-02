@@ -1,0 +1,223 @@
+{% extends "base/base_auth.html" %}
+{% load ui_tags %}
+
+{% block title %}Setup Your Company{% endblock %}
+{% block auth_subtitle %}Configure your business workspace in three quick steps{% endblock %}
+
+{% block extra_head %}
+<style>
+  .auth-container { max-width: 580px; }
+</style>
+{% endblock %}
+
+{% block auth_content %}
+<div class="onboarding-steps">
+  {% for step in steps %}
+    <div class="step-item {% if step.number == current_step %}active{% elif step.completed %}completed{% endif %}">
+      <div class="step-circle">{% if step.completed %}&#10003;{% else %}{{ step.number }}{% endif %}</div>
+      <div class="step-label">{{ step.title }}</div>
+    </div>
+    {% if not forloop.last %}
+      <div class="step-line {% if step.completed %}completed{% endif %}"></div>
+    {% endif %}
+  {% endfor %}
+</div>
+
+{% if current_step == 1 %}
+<form method="POST" x-data="{ gstin: '{{ company.gstin|default:'' }}' }">
+  {% csrf_token %}
+  <input type="hidden" name="step" value="1">
+
+  <div class="form-group mb-16">
+    <label class="form-label required" for="id_company_name">Company Name</label>
+    <input id="id_company_name" name="company_name" class="form-control" required value="{{ company.company_name|default:'' }}">
+  </div>
+
+  <div class="grid-2 mb-16">
+    <div class="form-group">
+      <label class="form-label" for="id_trade_name">Trade Name</label>
+      <input id="id_trade_name" name="trade_name" class="form-control" value="{{ company.trade_name|default:'' }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="id_logo_text">Logo Text</label>
+      <input id="id_logo_text" name="logo_text" class="form-control" maxlength="6" value="{{ company.logo_text|default:'' }}">
+    </div>
+  </div>
+
+  <div class="form-group mb-16">
+    <label class="form-label" for="id_unit_division">Unit / Division</label>
+    <input id="id_unit_division" name="unit_division" class="form-control" value="{{ company.unit_division|default:'' }}">
+  </div>
+
+  <div class="grid-2 mb-16">
+    <div class="form-group">
+      <label class="form-label" for="id_gstin">GSTIN</label>
+      <input id="id_gstin" name="gstin" x-model="gstin" @input="if(gstin.length === 15){ document.getElementById('id_state_code').value = gstin.slice(0,2); document.getElementById('id_pan').value = gstin.slice(2,12); }" class="form-control" value="{{ company.gstin|default:'' }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="id_pan">PAN</label>
+      <input id="id_pan" name="pan" class="form-control" value="{{ company.pan|default:'' }}">
+    </div>
+  </div>
+
+  <div class="grid-2 mb-16">
+    <div class="form-group">
+      <label class="form-label" for="id_mobile_primary">Primary Mobile</label>
+      <input id="id_mobile_primary" name="mobile_primary" class="form-control" value="{{ company.mobile_primary|default:'' }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="id_mobile_secondary">Secondary Mobile</label>
+      <input id="id_mobile_secondary" name="mobile_secondary" class="form-control" value="{{ company.mobile_secondary|default:'' }}">
+    </div>
+  </div>
+
+  <div class="form-group mb-16">
+    <label class="form-label" for="id_email">Email</label>
+    <input id="id_email" name="email" type="email" class="form-control" value="{{ company.email|default:'' }}">
+  </div>
+
+  <div class="form-group mb-16">
+    <label class="form-label" for="id_address_line1">Address Line 1</label>
+    <input id="id_address_line1" name="address_line1" class="form-control" value="{{ company.address_line1|default:'' }}">
+  </div>
+  <div class="form-group mb-16">
+    <label class="form-label" for="id_address_line2">Address Line 2</label>
+    <input id="id_address_line2" name="address_line2" class="form-control" value="{{ company.address_line2|default:'' }}">
+  </div>
+
+  <div class="grid-2 mb-16">
+    <div class="form-group">
+      <label class="form-label" for="id_city">City</label>
+      <input id="id_city" name="city" class="form-control" value="{{ company.city|default:'' }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="id_pincode">Pincode</label>
+      <input id="id_pincode" name="pincode" class="form-control" value="{{ company.pincode|default:'' }}">
+    </div>
+  </div>
+
+  <div class="grid-2 mb-24">
+    <div class="form-group">
+      <label class="form-label" for="id_state">State</label>
+      <input id="id_state" name="state" class="form-control" value="{{ company.state|default:'' }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="id_state_code">State Code</label>
+      <input id="id_state_code" name="state_code" class="form-control" value="{{ company.state_code|default:'' }}">
+    </div>
+  </div>
+
+  <div class="flex-between">
+    <span class="text-sm text-muted">Step 1 of 3</span>
+    <button type="submit" class="btn btn-primary">Next &rarr;</button>
+  </div>
+</form>
+{% endif %}
+
+{% if current_step == 2 %}
+<form method="POST">
+  {% csrf_token %}
+  <input type="hidden" name="step" value="2">
+
+  <div class="mb-16">
+    <h3 class="card-title">Add your bank account</h3>
+    <p class="text-sm text-muted">This appears on invoices for payment. You can skip this and add it later.</p>
+  </div>
+
+  <div class="form-group mb-16">
+    <label class="form-label" for="id_bank_name">Bank Name</label>
+    <input id="id_bank_name" name="bank_name" class="form-control" required>
+  </div>
+
+  <div class="grid-2 mb-16">
+    <div class="form-group">
+      <label class="form-label" for="id_branch_name">Branch Name</label>
+      <input id="id_branch_name" name="branch_name" class="form-control">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="id_account_type">Account Type</label>
+      <select id="id_account_type" name="account_type" class="form-control">
+        <option value="current">Current</option>
+        <option value="savings">Savings</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid-2 mb-16">
+    <div class="form-group">
+      <label class="form-label" for="id_account_number">Account Number</label>
+      <input id="id_account_number" name="account_number" class="form-control">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="id_ifsc_code">IFSC Code</label>
+      <input id="id_ifsc_code" name="ifsc_code" class="form-control" maxlength="11" style="text-transform:uppercase;">
+      <span class="form-hint">11-character code e.g. KKBK0000172</span>
+    </div>
+  </div>
+
+  <div class="form-group mb-24">
+    <label class="form-label" for="id_upi_id">UPI ID</label>
+    <input id="id_upi_id" name="upi_id" class="form-control">
+  </div>
+
+  <div class="flex-between">
+    <a href="{% url 'company_ui:onboarding' %}?step=1" class="btn btn-secondary">&larr; Back</a>
+    <div class="flex-center gap-8">
+      <a href="{% url 'company_ui:onboarding' %}?step=3" class="btn btn-secondary">Skip for now</a>
+      <button type="submit" class="btn btn-primary">Next &rarr;</button>
+    </div>
+  </div>
+</form>
+{% endif %}
+
+{% if current_step == 3 %}
+<form method="POST" x-data="{ loading: false }">
+  {% csrf_token %}
+  <input type="hidden" name="step" value="3">
+
+  <div class="mb-16">
+    <h3 class="card-title">Invoice configuration</h3>
+  </div>
+
+  <div class="grid-2 mb-16">
+    <div class="form-group">
+      <label class="form-label" for="id_invoice_prefix">Invoice Prefix</label>
+      <input id="id_invoice_prefix" name="invoice_prefix" class="form-control" value="{{ inv_settings.invoice_prefix|default:'INV' }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="id_financial_year">Financial Year</label>
+      <input id="id_financial_year" name="financial_year" class="form-control" value="{{ inv_settings.financial_year|default:'25-26' }}">
+    </div>
+  </div>
+
+  <div class="grid-2 mb-16">
+    <div class="form-group">
+      <label class="form-label" for="id_invoice_counter">Starting Number</label>
+      <input id="id_invoice_counter" name="invoice_counter" class="form-control" type="number" min="1" value="{{ inv_settings.invoice_counter|default:1 }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="id_default_due_days">Default Due Days</label>
+      <input id="id_default_due_days" name="default_due_days" class="form-control" type="number" min="0" value="{{ inv_settings.default_due_days|default:30 }}">
+    </div>
+  </div>
+
+  <div class="form-group mb-16">
+    <label class="form-label" for="id_default_transport">Default Transport</label>
+    <input id="id_default_transport" name="default_transport" class="form-control" value="{{ inv_settings.default_transport|default:'BY Hand' }}">
+  </div>
+
+  <div class="form-group mb-24">
+    <label class="form-label" for="id_invoice_terms">Terms & Conditions</label>
+    <textarea id="id_invoice_terms" name="invoice_terms" class="form-control" rows="5" placeholder="1. Goods once sold will not be taken back&#10;2. Payment term: 100% Advance TT&#10;3. Subject to Delhi jurisdiction only&#10;4. E&OE">{{ inv_settings.invoice_terms|default:'' }}</textarea>
+  </div>
+
+  <div class="flex-between">
+    <a href="{% url 'company_ui:onboarding' %}?step=2" class="btn btn-secondary">&larr; Back</a>
+    <button type="submit" class="btn btn-accent" @click="loading = true" :disabled="loading">
+      <span x-show="!loading">Complete Setup</span>
+      <span x-show="loading" class="flex-center gap-8"><span class="spinner"></span>Saving...</span>
+    </button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

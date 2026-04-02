@@ -1,0 +1,99 @@
+<form method="POST" action="{% url 'company_ui:invoice-settings' %}" hx-post="{% url 'company_ui:invoice-settings' %}" hx-target="this" hx-swap="outerHTML">
+  {% csrf_token %}
+
+  <div class="settings-grid" x-data="{ prefix: '{{ inv_settings.invoice_prefix }}', fy: '{{ inv_settings.financial_year }}', counter: {{ inv_settings.invoice_counter }} }">
+    <section class="card section-gap">
+      <div class="card-header"><h3 class="card-title">Invoice Numbering</h3></div>
+      <div class="form-group mb-16">
+        <label class="form-label">Invoice Prefix</label>
+        <input name="invoice_prefix" x-model="prefix" class="form-control" value="{{ inv_settings.invoice_prefix }}">
+        <span class="form-hint">Short code before invoice number e.g. SSI</span>
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Financial Year</label>
+        <input name="financial_year" x-model="fy" class="form-control" value="{{ inv_settings.financial_year }}">
+        <span class="form-hint">Format: YY-YY e.g. 25-26</span>
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Starting Number</label>
+        <input class="form-control" type="number" min="1" value="{{ inv_settings.invoice_counter }}" disabled>
+        <span class="form-hint">Next invoice will use this counter (managed automatically)</span>
+      </div>
+      <div class="inv-number-preview">
+        <label class="form-label">Preview</label>
+        <div class="preview-box font-mono">
+          <span x-text="prefix || 'INV'"></span>/<span x-text="fy || '25-26'"></span>/<span x-text="String(counter).padStart(4,'0')"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section-gap">
+      <div class="card-header"><h3 class="card-title">Invoice Defaults</h3></div>
+      <div class="form-group mb-16">
+        <label class="form-label">Default Due Days</label>
+        <input name="default_due_days" type="number" min="0" class="form-control" value="{{ inv_settings.default_due_days }}">
+        <span class="form-hint">0 = due immediately</span>
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Default Transport</label>
+        <input name="default_transport" class="form-control" placeholder="BY Hand" value="{{ inv_settings.default_transport|default:'BY Hand' }}">
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Default Place of Supply</label>
+        <input name="default_place_of_supply" class="form-control" value="{{ inv_settings.default_place_of_supply|default:'' }}">
+      </div>
+
+      <div class="divider"></div>
+      <div class="card-header"><h3 class="card-title">GST & Compliance</h3></div>
+      <div class="toggle-switch">
+        <div class="toggle-label"><div class="toggle-title">Reverse Charge Applicable</div></div>
+        <label class="toggle"><input type="checkbox" name="reverse_charge_applicable" {% if inv_settings.reverse_charge_applicable %}checked{% endif %}><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-switch">
+        <div class="toggle-label"><div class="toggle-title">E-Invoicing Enabled</div><div class="toggle-sub">For businesses with turnover > ₹5 Cr</div></div>
+        <label class="toggle"><input type="checkbox" name="einvoicing_enabled" {% if inv_settings.einvoicing_enabled %}checked{% endif %}><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-switch">
+        <div class="toggle-label"><div class="toggle-title">E-Way Bill Enabled</div><div class="toggle-sub">For goods value > ₹50,000</div></div>
+        <label class="toggle"><input type="checkbox" name="ewaybill_enabled" {% if inv_settings.ewaybill_enabled %}checked{% endif %}><span class="toggle-slider"></span></label>
+      </div>
+    </section>
+
+    <section class="card section-gap">
+      <div class="card-header"><h3 class="card-title">Print Settings</h3></div>
+      <div class="toggle-switch">
+        <div class="toggle-label"><div class="toggle-title">Show Bank Details</div></div>
+        <label class="toggle"><input type="checkbox" name="show_bank_details" {% if inv_settings.show_bank_details %}checked{% endif %}><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-switch">
+        <div class="toggle-label"><div class="toggle-title">Show Signature</div></div>
+        <label class="toggle"><input type="checkbox" name="show_signature" {% if inv_settings.show_signature %}checked{% endif %}><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="form-group mt-16">
+        <label class="form-label">Number of Copies</label>
+        <div class="flex gap-12">
+          <label class="text-sm"><input type="radio" name="number_of_copies" value="1" {% if inv_settings.number_of_copies == 1 %}checked{% endif %}> 1 - Original only</label>
+          <label class="text-sm"><input type="radio" name="number_of_copies" value="2" {% if inv_settings.number_of_copies == 2 %}checked{% endif %}> 2 - Original + Duplicate</label>
+          <label class="text-sm"><input type="radio" name="number_of_copies" value="3" {% if inv_settings.number_of_copies == 3 %}checked{% endif %}> 3 - Original + Duplicate + Triplicate</label>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section-gap full-width">
+      <div class="card-header"><h3 class="card-title">Default Terms & Conditions</h3></div>
+      <p class="text-sm text-muted mb-16">Printed on every invoice. Can be overridden per invoice.</p>
+      <div class="form-group mb-16">
+        <textarea name="invoice_terms" rows="6" class="form-control">{{ inv_settings.invoice_terms|default:'' }}</textarea>
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Default Notes</label>
+        <textarea name="invoice_notes" rows="3" class="form-control">{{ inv_settings.invoice_notes|default:'' }}</textarea>
+      </div>
+      <div class="flex-between mt-24">
+        <span class="text-muted text-sm">Invoice counter: {{ inv_settings.invoice_counter }} (auto-incremented, not editable)</span>
+        <button type="submit" class="btn btn-primary btn-lg">Save Invoice Settings</button>
+      </div>
+    </section>
+  </div>
+</form>

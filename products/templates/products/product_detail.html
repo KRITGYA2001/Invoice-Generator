@@ -1,0 +1,90 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="text-sm text-muted mb-16">
+  <a href="{% url 'products_ui:product-list' %}">Products</a> / {{ product.name }}
+</div>
+
+<div class="flex-between mb-24">
+  <div class="flex-center gap-12">
+    {% if product.image %}
+      <img src="{{ product.image.url }}" class="product-detail-image" alt="{{ product.name }}">
+    {% else %}
+      <div class="product-detail-image placeholder">{{ product.name|first|upper }}</div>
+    {% endif %}
+    <div>
+      <h1 class="page-heading">{{ product.name }}</h1>
+      <div class="flex-center gap-8 mt-6">
+        {% if product.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-gray">Inactive</span>{% endif %}
+        {% if product.is_service %}<span class="badge badge-blue">Service</span>{% endif %}
+        <span class="text-xs text-muted">Created {{ product.created_at|date:"d M Y" }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="flex-center gap-8">
+    <button type="button" class="btn btn-secondary" hx-get="{% url 'products_ui:stock-adjust' product.pk %}" hx-target="#modal-container" hx-swap="innerHTML">Adjust Stock</button>
+    <a href="{% url 'products_ui:product-edit' product.pk %}" class="btn btn-primary">Edit Product</a>
+  </div>
+</div>
+
+<div class="settings-grid">
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">Pricing & Tax</h2></div>
+    <div class="kv-grid">
+      <div><span class="text-muted">Selling Price</span><div class="font-mono font-bold">{{ product.selling_price|indian_rupee }}</div></div>
+      <div><span class="text-muted">GST Rate</span><div class="font-bold">{{ product.gst_rate }}%</div></div>
+      <div><span class="text-muted">Price incl. GST</span><div class="font-mono">{{ product.price_with_gst|indian_rupee }}</div></div>
+      <div><span class="text-muted">Purchase Price</span><div class="font-mono">{{ product.purchase_price|default:0|indian_rupee }}</div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">Classification</h2></div>
+    <div class="kv-grid">
+      <div><span class="text-muted">HSN / SAC</span><div class="font-mono">{{ product.hsn_code }}</div></div>
+      <div><span class="text-muted">Category</span><div>{% if product.category %}<span class="tag">{{ product.category.name }}</span>{% else %}<span class="text-muted">-</span>{% endif %}</div></div>
+      <div><span class="text-muted">Unit</span><div>{{ product.unit.name }} ({{ product.unit.short_name }})</div></div>
+      <div><span class="text-muted">SKU</span><div class="font-mono">{{ product.sku|default:"-" }}</div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">Inventory</h2></div>
+    {% if product.track_inventory %}
+      <div class="kv-grid mb-16">
+        <div><span class="text-muted">Current Stock</span><div class="font-mono font-bold {% if product.is_low_stock %}text-danger{% endif %}">{{ product.current_stock|floatformat:"-3" }} {{ product.unit.short_name }}</div></div>
+        <div><span class="text-muted">Minimum Stock</span><div class="font-mono">{{ product.minimum_stock|floatformat:"-3" }}</div></div>
+        <div><span class="text-muted">Maximum Stock</span><div class="font-mono">{{ product.maximum_stock|default:"-" }}</div></div>
+        <div><span class="text-muted">Stock Value</span><div class="font-mono">{{ product.stock_value|indian_rupee }}</div></div>
+      </div>
+      {% if product.maximum_stock %}
+      <div class="stock-bar big">
+        <div class="stock-bar-fill {% if product.is_low_stock %}danger{% else %}normal{% endif %}" style="width:{% widthratio product.current_stock product.maximum_stock 100 %}%"></div>
+      </div>
+      {% endif %}
+      {% if product.is_low_stock %}
+      <div class="alert alert-warning mt-12">Current stock is below minimum stock level.</div>
+      {% endif %}
+    {% else %}
+      <div class="text-muted">Inventory tracking is disabled for this product.</div>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">Description</h2></div>
+    <div class="text-sm">{{ product.description|default:"No description provided." }}</div>
+  </section>
+
+  <section class="card full-width" id="stock-history-panel" hx-get="{% url 'products_ui:stock-history' product.pk %}" hx-trigger="load, stockUpdated from:body" hx-swap="innerHTML">
+    <div class="text-muted">Loading stock history...</div>
+  </section>
+
+  {% if invoice_usage_count > 0 %}
+  <section class="card full-width">
+    <div class="alert alert-warning">This product appears in {{ invoice_usage_count }} invoice line items. Deactivation is recommended instead of deletion.</div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

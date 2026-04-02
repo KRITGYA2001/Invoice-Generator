@@ -1,0 +1,108 @@
+{% extends "base/base.html" %}
+{% load ui_tags %}
+{% block title %}{% if is_edit %}Edit{% else %}Add{% endif %} Product{% endblock %}
+
+{% block content %}
+{% with prod=product|default:None %}
+<div class="text-sm text-muted mb-16">
+  <a href="{% url 'products_ui:product-list' %}">Products</a> /
+  {% if is_edit %}Edit: {{ prod.name }}{% else %}New Product{% endif %}
+</div>
+
+<h1 class="page-heading mb-24">{% if is_edit %}Edit Product{% else %}New Product{% endif %}</h1>
+
+<form method="POST" enctype="multipart/form-data" x-data="{ isService: {% if is_edit %}{{ prod.is_service|yesno:'true,false' }}{% else %}{{ form_data.is_service|yesno:'true,false'|default:'false' }}{% endif %}, trackInv: {% if is_edit %}{{ prod.track_inventory|yesno:'true,false' }}{% else %}{{ form_data.track_inventory|yesno:'true,false'|default:'true' }}{% endif %}, price: {% if is_edit %}{{ prod.selling_price }}{% else %}{{ form_data.selling_price|default:0 }}{% endif %}, gst: {% if is_edit %}{{ prod.gst_rate }}{% else %}{{ form_data.gst_rate|default:18 }}{% endif %}, preview: null }">
+  {% csrf_token %}
+
+  <div class="settings-grid">
+    <section class="card">
+      <div class="card-header"><h2 class="card-title">Product Details</h2></div>
+      <div class="form-group mb-16"><label class="form-label required">Name</label><input name="name" class="form-control {% if form_errors.name %}is-invalid{% endif %}" value="{% if form_data.name %}{{ form_data.name }}{% elif is_edit %}{{ prod.name }}{% endif %}" required>{% if form_errors.name %}<span class="form-error">{{ form_errors.name }}</span>{% endif %}</div>
+      <div class="form-group mb-16"><label class="form-label">Description</label><textarea name="description" rows="3" class="form-control">{% if form_data.description %}{{ form_data.description }}{% elif is_edit %}{{ prod.description }}{% endif %}</textarea></div>
+      <div class="form-group mb-16"><label class="form-label">SKU</label><input name="sku" class="form-control" value="{% if form_data.sku %}{{ form_data.sku }}{% elif is_edit %}{{ prod.sku }}{% endif %}"><span class="form-hint">Your internal item code</span></div>
+      <label class="filter-toggle"><input type="checkbox" name="is_service" x-model="isService" {% if is_edit and prod.is_service %}checked{% endif %}> This is a service (SAC code)</label>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2 class="card-title">Classification</h2></div>
+      <div class="form-group mb-16">
+        <label class="form-label">Category</label>
+        <div class="flex-center gap-8">
+          <select name="category" class="form-control">
+            <option value="">Select category</option>
+            {% for cat in categories %}
+              {% with selected_id=form_data.category|default:prod.category.id|stringformat:'s' %}
+              <option value="{{ cat.id }}" {% if selected_id == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.name }}</option>
+              {% endwith %}
+            {% endfor %}
+          </select>
+          <button type="button" class="btn btn-secondary btn-icon" hx-get="{% url 'products_ui:category-list' %}" hx-target="#modal-container" hx-swap="innerHTML" aria-label="Manage categories">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group mb-16"><label class="form-label required">Unit</label><select name="unit" class="form-control {% if form_errors.unit %}is-invalid{% endif %}" required><option value="">Select unit</option>{% for unit in units %}{% with selected_id=form_data.unit|default:prod.unit.id|stringformat:'s' %}<option value="{{ unit.id }}" {% if selected_id == unit.id|stringformat:'s' %}selected{% endif %}>{{ unit.name }} ({{ unit.short_name }})</option>{% endwith %}{% endfor %}</select>{% if form_errors.unit %}<span class="form-error">{{ form_errors.unit }}</span>{% endif %}</div>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2 class="card-title">Pricing</h2></div>
+      <div class="form-group mb-16"><label class="form-label required">Selling Price (₹) excl. GST</label><input type="number" step="0.01" min="0" name="selling_price" x-model="price" class="form-control {% if form_errors.selling_price %}is-invalid{% endif %}" value="{% if form_data.selling_price %}{{ form_data.selling_price }}{% elif is_edit %}{{ prod.selling_price }}{% endif %}" required>{% if form_errors.selling_price %}<span class="form-error">{{ form_errors.selling_price }}</span>{% endif %}</div>
+      <div class="form-group mb-16"><label class="form-label">Purchase / Cost Price (₹)</label><input type="number" step="0.01" min="0" name="purchase_price" class="form-control {% if form_errors.purchase_price %}is-invalid{% endif %}" value="{% if form_data.purchase_price %}{{ form_data.purchase_price }}{% elif is_edit and prod.purchase_price %}{{ prod.purchase_price }}{% endif %}"><span class="form-hint">Used for profit calculation, not shown on invoice</span>{% if form_errors.purchase_price %}<span class="form-error">{{ form_errors.purchase_price }}</span>{% endif %}</div>
+
+      <div class="price-preview-box">
+        <div class="flex-between"><span class="text-sm text-muted">Price excl. GST</span><span class="font-mono" x-text="'₹' + parseFloat(price||0).toFixed(2)"></span></div>
+        <div class="flex-between"><span class="text-sm text-muted">GST (<span x-text="gst"></span>%)</span><span class="font-mono" x-text="'₹' + (parseFloat(price||0) * parseFloat(gst||0)/100).toFixed(2)"></span></div>
+        <div class="flex-between font-bold" style="border-top:1px solid var(--gray-200);margin-top:8px;padding-top:8px"><span class="text-sm">Price incl. GST</span><span class="font-mono" x-text="'₹' + (parseFloat(price||0) * (1 + parseFloat(gst||0)/100)).toFixed(2)"></span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2 class="card-title">Tax Details</h2></div>
+      <div class="form-group mb-16"><label class="form-label required" x-text="isService ? 'SAC Code' : 'HSN Code'"></label><input name="hsn_code" class="form-control {% if form_errors.hsn_code %}is-invalid{% endif %}" value="{% if form_data.hsn_code %}{{ form_data.hsn_code }}{% elif is_edit %}{{ prod.hsn_code }}{% endif %}" required><span class="form-hint">4-8 digit code for the product/service</span>{% if form_errors.hsn_code %}<span class="form-error">{{ form_errors.hsn_code }}</span>{% endif %}</div>
+      <div class="form-group mb-16"><label class="form-label">GST Rate</label><select name="gst_rate" x-model="gst" class="form-control {% if form_errors.gst_rate %}is-invalid{% endif %}">{% for rate in gst_rates %}{% with selected=form_data.gst_rate|default:prod.gst_rate|stringformat:'s' %}<option value="{{ rate }}" {% if selected == rate|stringformat:'s' %}selected{% endif %}>{{ rate }}%</option>{% endwith %}{% endfor %}</select>{% if form_errors.gst_rate %}<span class="form-error">{{ form_errors.gst_rate }}</span>{% endif %}</div>
+      <div class="form-group"><label class="form-label">Cess Rate</label><input type="number" step="0.01" min="0" name="cess_rate" class="form-control {% if form_errors.cess_rate %}is-invalid{% endif %}" value="{% if form_data.cess_rate %}{{ form_data.cess_rate }}{% elif is_edit %}{{ prod.cess_rate }}{% else %}0{% endif %}">{% if form_errors.cess_rate %}<span class="form-error">{{ form_errors.cess_rate }}</span>{% endif %}</div>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2 class="card-title">Inventory Settings</h2></div>
+      <label class="filter-toggle mb-16"><input type="checkbox" name="track_inventory" x-model="trackInv" {% if form_data.track_inventory %}checked{% elif not form_data %}{% if is_edit %}{% if prod.track_inventory %}checked{% endif %}{% else %}checked{% endif %}{% endif %}> Track inventory</label>
+      <div x-show="trackInv" x-transition>
+        <div class="form-group mb-16"><label class="form-label">Minimum Stock</label><input type="number" step="0.001" min="0" name="minimum_stock" class="form-control {% if form_errors.minimum_stock %}is-invalid{% endif %}" value="{% if form_data.minimum_stock %}{{ form_data.minimum_stock }}{% elif is_edit %}{{ prod.minimum_stock }}{% else %}0{% endif %}">{% if form_errors.minimum_stock %}<span class="form-error">{{ form_errors.minimum_stock }}</span>{% endif %}</div>
+        <div class="form-group mb-16"><label class="form-label">Maximum Stock</label><input type="number" step="0.001" min="0" name="maximum_stock" class="form-control {% if form_errors.maximum_stock %}is-invalid{% endif %}" value="{% if form_data.maximum_stock %}{{ form_data.maximum_stock }}{% elif is_edit and prod.maximum_stock %}{{ prod.maximum_stock }}{% endif %}"><span class="form-hint">Maximum capacity (optional)</span>{% if form_errors.maximum_stock %}<span class="form-error">{{ form_errors.maximum_stock }}</span>{% endif %}</div>
+
+        {% if not is_edit %}
+        <div class="form-group"><label class="form-label">Opening Stock</label><input type="number" step="0.001" min="0" name="opening_stock" class="form-control {% if form_errors.opening_stock %}is-invalid{% endif %}" value="{{ form_data.opening_stock|default:0 }}"><span class="form-hint">Initial stock quantity (creates opening entry)</span>{% if form_errors.opening_stock %}<span class="form-error">{{ form_errors.opening_stock }}</span>{% endif %}</div>
+        {% endif %}
+      </div>
+
+      {% if is_edit %}
+      <div class="info-box mt-16">
+        <div class="flex-between"><span>Current Stock</span><span class="font-mono font-bold">{{ prod.current_stock }} {{ prod.unit.short_name }}</span></div>
+        <div class="mt-8"><button type="button" class="btn btn-sm btn-secondary" hx-get="{% url 'products_ui:stock-adjust' prod.pk %}" hx-target="#modal-container" hx-swap="innerHTML">Adjust Stock</button></div>
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2 class="card-title">Product Image</h2></div>
+      <div class="logo-preview">
+        {% if is_edit and prod.image %}
+          <img src="{{ prod.image.url }}" alt="{{ prod.name }}" x-show="!preview">
+        {% else %}
+          <div class="logo-placeholder" x-show="!preview">{{ form_data.name|default:prod.name|default:'P'|first|upper }}</div>
+        {% endif %}
+        <img x-show="preview" :src="preview" class="logo-preview-img" alt="Preview">
+      </div>
+      <label class="file-upload-btn" for="id_image">Upload Image</label>
+      <input id="id_image" type="file" name="image" accept="image/*" @change="preview = URL.createObjectURL($event.target.files[0])">
+      {% if form_errors.image %}<span class="form-error">{{ form_errors.image }}</span>{% endif %}
+    </section>
+
+    <div class="full-width flex-between mt-24">
+      <a href="{% url 'products_ui:product-list' %}" class="btn btn-secondary">&larr; Cancel</a>
+      <button type="submit" class="btn btn-primary btn-lg">{% if is_edit %}Save Changes{% else %}Create Product{% endif %}</button>
+    </div>
+  </div>
+</form>
+{% endwith %}
+{% endblock %}
