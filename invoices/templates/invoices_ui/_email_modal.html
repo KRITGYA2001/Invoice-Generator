@@ -1,10 +1,16 @@
-<div class="modal-backdrop" x-data @click.self="$el.remove()">
+<div class="modal-backdrop" x-data="{ sending: false }" @click.self="$el.remove()">
   <div class="modal">
     <div class="modal-header">
       <h3 class="modal-title">Send Invoice by Email</h3>
       <button @click="$el.closest('.modal-backdrop').remove()" class="btn btn-icon btn-secondary">X</button>
     </div>
-    <form hx-post="{% url 'invoices_ui:invoice-email' invoice.pk %}" hx-target="#modal-container" hx-swap="innerHTML">
+    <form
+      hx-post="{% url 'invoices_ui:invoice-email' invoice.pk %}"
+      hx-target="#email-feedback-{{ invoice.pk }}"
+      hx-swap="innerHTML"
+      @htmx:before-request="sending = true"
+      @htmx:after-request="sending = false"
+    >
       {% csrf_token %}
       <div class="modal-body">
         <div class="form-group">
@@ -15,10 +21,17 @@
         <div class="text-sm text-muted mt-8">
           PDF will be attached automatically. Subject: Invoice {{ invoice.invoice_number }}
         </div>
+        <div id="email-feedback-{{ invoice.pk }}" class="mt-12"></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" @click="$el.closest('.modal-backdrop').remove()">Cancel</button>
-        <button type="submit" class="btn btn-primary">Send Email</button>
+        <button type="submit" class="btn btn-primary" :disabled="sending">
+          <span x-show="!sending">Send Email</span>
+          <span x-show="sending">
+            <span class="spinner" style="width:12px;height:12px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+            Sending...
+          </span>
+        </button>
       </div>
     </form>
   </div>

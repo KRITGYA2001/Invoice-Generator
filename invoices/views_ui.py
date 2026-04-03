@@ -342,25 +342,6 @@ class InvoiceDetailView(OnboardingCheckMixin, View):
 
 
 @method_decorator(login_required, name="dispatch")
-class InvoicePrintView(OnboardingCheckMixin, View):
-    template_name = "invoices_ui/invoice_print.html"
-
-    def get(self, request: HttpRequest, pk) -> HttpResponse:
-        company = request.user.company_profile
-        invoice = get_object_or_404(Invoice.objects.filter(company=company).prefetch_related("line_items"), pk=pk)
-        context = InvoicePDFService.build_context(invoice)
-        copy_labels = InvoicePDFService._copy_labels(request.GET.get("copies"), invoice)
-        context.update(
-            {
-                "page_title": f"Print {invoice.invoice_number}",
-                "print_mode": True,
-                "copy_labels": copy_labels,
-            }
-        )
-        return render(request, self.template_name, context)
-
-
-@method_decorator(login_required, name="dispatch")
 class InvoiceUpdateView(OnboardingCheckMixin, View):
     template_name = "invoices_ui/invoice_form.html"
 
@@ -635,31 +616,53 @@ class InvoiceDuplicateView(View):
 
 @method_decorator(login_required, name="dispatch")
 class InvoicePDFView(OnboardingCheckMixin, View):
+    """
+    Generates and downloads invoice PDF using Playwright.
+    GET /invoices/<uuid:pk>/pdf/
+    Query params:
+      copies=1|2|3  (default from invoice settings)
+      download=true|false (default true)
+        true  = attachment (download)
+        false = inline (view in browser)
+    """
+
     def get(self, request: HttpRequest, pk) -> HttpResponse:
         company = request.user.company_profile
-        invoice = get_object_or_404(Invoice, company=company, pk=pk)
+        try:
+            invoice = Invoice.objects.get(pk=pk, company=company)
+        except Invoice.DoesNotExist:
+            messages.error(request, "Invoice not found")
+            return redirect("invoices_ui:invoice-list")
+
         if invoice.status != Invoice.StatusChoices.ISSUED:
-            messages.error(request, "PDF can only be downloaded for issued invoices")
-            return redirect("invoices_ui:invoice-detail", pk=invoice.pk)
-
-        copies = request.GET.get("copies") or "1"
-        try:
-            copies_int = max(1, min(int(copies), 3))
-        except ValueError:
-            copies_int = 1
+            messages.error(
+                request,
+                "PDF is only available for issued invoices. "
+                "Please issue the invoice first.",
+            )
+            return redirect("invoices_ui:invoice-detail", pk=pk)
 
         try:
-            pdf_bytes = InvoicePDFService.generate_pdf(invoice, num_copies=copies_int)
-        except RuntimeError as exc:
-            messages.error(request, str(exc))
-            return redirect("invoices_ui:invoice-detail", pk=invoice.pk)
-        except Exception:
-            messages.error(request, "Unable to generate PDF right now. Please try again later.")
-            return redirect("invoices_ui:invoice-detail", pk=invoice.pk)
+            copies = int(request.GET.get("copies", 1))
+            copies = max(1, min(3, copies))
+        except (ValueError, TypeError):
+            copies = 1
+
+        download = request.GET.get("download", "true").lower()
+        is_download = download != "false"
+
+        try:
+            pdf_bytes = InvoicePDFService.generate_pdf(invoice, copies)
+        except Exception as exc:
+            messages.error(request, f"PDF generation failed: {str(exc)}")
+            return redirect("invoices_ui:invoice-detail", pk=pk)
+
+        filename = InvoicePDFService.get_pdf_filename(invoice)
+        disposition = "attachment" if is_download else "inline"
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = f'attachment; filename="{InvoicePDFService.get_pdf_filename(invoice)}"'
-        response["Content-Length"] = str(len(pdf_bytes))
+        response["Content-Disposition"] = f'{disposition}; filename="{filename}"'
+        response["Content-Length"] = len(pdf_bytes)
         return response
 
 
@@ -675,17 +678,17 @@ class InvoiceEmailView(OnboardingCheckMixin, View):
         invoice = get_object_or_404(Invoice, company=company, pk=pk)
 
         if invoice.status != Invoice.StatusChoices.ISSUED:
-            return HttpResponse('<div class="alert alert-danger">Only issued invoices can be emailed.</div>', status=400)
+            return HttpResponse('<div class="alert alert-danger">Only issued invoices can be emailed.</div>')
 
         recipient = (request.POST.get("email") or "").strip() or invoice.customer_email
         if not recipient:
-            return HttpResponse('<div class="alert alert-danger">No recipient email provided.</div>', status=400)
+            return HttpResponse('<div class="alert alert-danger">No recipient email provided.</div>')
 
         try:
             InvoicePDFService.send_invoice_email(invoice, recipient_email=recipient)
             return HttpResponse('<div class="alert alert-success">Invoice email sent successfully.</div>')
         except Exception as exc:
-            return HttpResponse(f'<div class="alert alert-danger">{str(exc)}</div>', status=500)
+            return HttpResponse(f'<div class="alert alert-danger">{str(exc)}</div>')
 
 
 @method_decorator(login_required, name="dispatch")

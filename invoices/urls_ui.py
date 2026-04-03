@@ -10,7 +10,6 @@ from invoices.views_ui import (
 	InvoiceIssueView,
 	InvoiceListView,
 	InvoicePDFView,
-	InvoicePrintView,
 	InvoiceUpdateView,
 	ProductSearchView,
 )
@@ -26,7 +25,6 @@ urlpatterns = [
 	path("<uuid:pk>/issue/", InvoiceIssueView.as_view(), name="invoice-issue"),
 	path("<uuid:pk>/cancel/", InvoiceCancelView.as_view(), name="invoice-cancel"),
 	path("<uuid:pk>/duplicate/", InvoiceDuplicateView.as_view(), name="invoice-duplicate"),
-	path("<uuid:pk>/print/", InvoicePrintView.as_view(), name="invoice-print"),
 	path("<uuid:pk>/pdf/", InvoicePDFView.as_view(), name="invoice-pdf"),
 	path("<uuid:pk>/send-email/", InvoiceEmailView.as_view(), name="invoice-email"),
 ]

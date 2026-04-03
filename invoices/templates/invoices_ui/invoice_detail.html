@@ -39,8 +39,6 @@
       <button type="submit" class="btn btn-secondary">Duplicate</button>
     </form>
 
-    <a href="{% url 'invoices_ui:invoice-print' invoice.pk %}" class="btn btn-secondary no-print">Print</a>
-
     {% if can_edit %}
       <a href="{% url 'invoices_ui:invoice-edit' invoice.pk %}" class="btn btn-secondary">Edit</a>
     {% endif %}
@@ -50,12 +48,18 @@
     {% endif %}
 
     {% if invoice.status == 'ISSUED' %}
-      <div x-data="{ open: false }" style="position:relative">
-        <button @click="open = !open" class="btn btn-accent">Download PDF</button>
+      <div x-data="{ loading: false, open: false }" style="position:relative">
+        <button @click="open = !open" :disabled="loading" class="btn btn-accent">
+          <span x-show="!loading">Download PDF</span>
+          <span x-show="loading">
+            <span class="spinner" style="width:12px;height:12px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+            Generating...
+          </span>
+        </button>
         <div x-show="open" @click.outside="open = false" class="dropdown-menu">
-          <a href="{% url 'invoices_ui:invoice-pdf' invoice.pk %}?copies=1" class="dropdown-item">1 Copy (Original)</a>
-          <a href="{% url 'invoices_ui:invoice-pdf' invoice.pk %}?copies=2" class="dropdown-item">2 Copies</a>
-          <a href="{% url 'invoices_ui:invoice-pdf' invoice.pk %}?copies=3" class="dropdown-item">3 Copies</a>
+          <a href="{% url 'invoices_ui:invoice-pdf' invoice.pk %}?copies=1" class="dropdown-item" @click="loading=true;open=false;setTimeout(()=>loading=false, 8000)">1 Copy (Original)</a>
+          <a href="{% url 'invoices_ui:invoice-pdf' invoice.pk %}?copies=2" class="dropdown-item" @click="loading=true;open=false;setTimeout(()=>loading=false, 8000)">2 Copies</a>
+          <a href="{% url 'invoices_ui:invoice-pdf' invoice.pk %}?copies=3" class="dropdown-item" @click="loading=true;open=false;setTimeout(()=>loading=false, 8000)">3 Copies</a>
         </div>
       </div>
 
