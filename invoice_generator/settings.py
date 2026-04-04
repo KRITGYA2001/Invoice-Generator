@@ -188,7 +188,7 @@ EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Invoice Generator <noreply@yourdomain.com>")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="BillMint <noreply@yourdomain.com>")
 
 DJANGO_REST_PASSWORDRESET_TOKEN_CONFIG = {
     "CLASS": "django_rest_passwordreset.tokens.RandomStringTokenGenerator",

@@ -4,26 +4,120 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Sign in{% endblock %} - Invoice Generator</title>
+  <title>{% block title %}Sign in{% endblock %} · BillMint</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
   <link rel="stylesheet" href="{% static 'css/auth.css' %}">
   <script src="{% static 'js/vendor/alpine.min.js' %}" defer></script>
   {% block extra_head %}{% endblock %}
 </head>
 <body class="auth-body">
-  <div class="auth-container">
-    <div class="auth-card">
-      <div class="auth-logo">
-        <div class="auth-logo-icon">{% block logo_text %}IV{% endblock %}</div>
-        <h1>Invoice Generator</h1>
-        <p>{% block auth_subtitle %}{% endblock %}</p>
+<div class="auth-split">
+
+  <!-- ══════════════════════════════════════════
+       LEFT — BLACK BRAND PANEL
+       ══════════════════════════════════════════ -->
+  <div class="auth-brand">
+    <div class="auth-brand-inner">
+
+      <!-- Logo -->
+      <div class="auth-logo-row">
+        <div class="auth-logo-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  stroke="#0a0a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="14 2 14 8 20 8"
+                      stroke="#0a0a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="9" y1="13" x2="15" y2="13" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round"/>
+            <line x1="9" y1="17" x2="13" y2="17" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="auth-logo-name">BillMint</span>
       </div>
-      {% include "base/_messages.html" %}
-      {% block auth_content %}{% endblock %}
+
+      <!-- Headline -->
+      <h2 class="auth-headline">
+        Invoicing built<br>for <span>India</span>.
+      </h2>
+
+      <p class="auth-tagline">
+        GST-compliant invoices, inventory management, and financial reports — everything your business needs, in one place.
+      </p>
+
+      <!-- Features -->
+      <ul class="auth-feat-list">
+        <li>
+          <span class="auth-feat-check">
+            <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          GST invoicing with HSN / SAC codes
+        </li>
+        <li>
+          <span class="auth-feat-check">
+            <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Live inventory &amp; low-stock alerts
+        </li>
+        <li>
+          <span class="auth-feat-check">
+            <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Customer, product &amp; category reports
+        </li>
+        <li>
+          <span class="auth-feat-check">
+            <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          PDF export &amp; email delivery
+        </li>
+      </ul>
+
+      <!-- Stat pills -->
+      <div class="auth-stats">
+        <div class="auth-stat-pill">
+          <div class="auth-stat-pill-dot"></div>
+          <span class="auth-stat-pill-text">10,000+ Invoices generated</span>
+        </div>
+        <div class="auth-stat-pill">
+          <div class="auth-stat-pill-dot"></div>
+          <span class="auth-stat-pill-text">₹2 Cr+ Revenue tracked</span>
+        </div>
+      </div>
+
     </div>
-    <p class="auth-footer">Construction Edition - Powered by Django</p>
+
+    <div class="auth-brand-foot">© 2026 BillMint</div>
   </div>
+
+  <!-- ══════════════════════════════════════════
+       RIGHT — WHITE FORM PANEL
+       ══════════════════════════════════════════ -->
+  <div class="auth-form-panel">
+    <div class="auth-form-inner">
+
+      <div class="auth-form-head">
+        <div class="auth-form-title">{% block auth_title %}Welcome back{% endblock %}</div>
+        <div class="auth-form-sub">{% block auth_subtitle %}{% endblock %}</div>
+      </div>
+
+      {% include "base/_messages.html" %}
+
+      {% block auth_content %}{% endblock %}
+
+      <p class="auth-page-foot">© 2026 BillMint &nbsp;·&nbsp; Built with ♥ for India</p>
+
+    </div>
+  </div>
+
+</div>
 </body>
 </html>

@@ -6,10 +6,189 @@
 
 {% block extra_head %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Print-only elements hidden on screen ── */
+    .print-header,
+    .print-daily-table,
+    .print-footer { display: none; }
+
+    @media print {
+      /* ── Page setup ── */
+      @page {
+        size: A4 portrait;
+        margin: 14mm 12mm 16mm 12mm;
+      }
+
+      /* ── Hide screen-only chrome ── */
+      .no-print,
+      .sidebar,
+      .topbar,
+      .page-actions,
+      .report-tabs,
+      .filter-bar,
+      .report-toolbar,
+      .dashboard-grid,
+      .report-actions { display: none !important; }
+
+      /* ── Reset layout ── */
+      body { background: #fff !important; font-size: 9pt; color: #111; }
+      .app-layout { display: block !important; }
+      .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+      .page-shell { padding: 0 !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; }
+      .card, .stat-card { box-shadow: none !important; border: 1px solid #d1d5db !important; border-radius: 4px !important; box-sizing: border-box !important; }
+
+      /* ── Table overflow containment ── */
+      .table-wrap { overflow: visible !important; width: 100% !important; max-width: 100% !important; }
+      .report-table { table-layout: fixed !important; width: 100% !important; max-width: 100% !important; word-break: break-word !important; }
+
+      /* ── Print header ── */
+      .print-header {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 2.5px solid #1a3a5c;
+        padding-bottom: 8px;
+        margin-bottom: 14px;
+      }
+      .print-header-left .print-company { font-size: 13pt; font-weight: 700; color: #1a3a5c; }
+      .print-header-left .print-report-title { font-size: 10pt; font-weight: 600; margin-top: 2px; }
+      .print-header-right { text-align: right; font-size: 8pt; color: #555; line-height: 1.6; }
+
+      /* ── Hide screen report header, show only period as subheading ── */
+      .report-header { display: none !important; }
+
+      /* ── Stat cards ── */
+      .metric-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
+      }
+      .stat-card {
+        padding: 8px 12px !important;
+        background: #f8fafc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .stat-label { font-size: 7.5pt !important; color: #555 !important; text-transform: uppercase; letter-spacing: 0.03em; }
+      .stat-value { font-size: 12pt !important; font-weight: 700 !important; color: #1a3a5c !important; margin-top: 2px; }
+
+      /* ── Daily summary table (replaces chart) ── */
+      .print-daily-table {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        margin-bottom: 12px;
+        break-inside: avoid;
+      }
+      .print-daily-table .report-table {
+        max-width: 340px !important; /* keeps it compact, left-aligned */
+      }
+      .print-section-title {
+        font-size: 9pt;
+        font-weight: 700;
+        color: #1a3a5c;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #1a3a5c;
+        padding-bottom: 3px;
+        margin-bottom: 6px;
+      }
+
+      /* ── Two-column grid ── */
+      .report-grid-2 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        margin-bottom: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      /* Critical: prevents grid children from overflowing their cell */
+      .report-grid-2 > article {
+        break-inside: avoid;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+      }
+
+      /* ── Full-width customer section ── */
+      .card { margin-bottom: 12px !important; break-inside: avoid; }
+
+      /* ── Card headers ── */
+      .card-header { padding: 8px 12px 4px !important; }
+      .card-kicker { font-size: 7pt !important; color: #888 !important; text-transform: uppercase; letter-spacing: 0.05em; }
+      .card-title { font-size: 9.5pt !important; font-weight: 700 !important; margin: 0 !important; }
+
+      /* ── Tables ── */
+      .report-table {
+        border-collapse: collapse !important;
+        font-size: 8pt !important;
+      }
+      .report-table thead tr {
+        background: #1a3a5c !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .report-table thead th {
+        color: #fff !important;
+        font-weight: 600 !important;
+        padding: 5px 8px !important;
+        border: 1px solid #1a3a5c !important;
+        font-size: 7.5pt !important;
+      }
+      .report-table tbody td {
+        padding: 4px 8px !important;
+        border: 1px solid #d1d5db !important;
+        color: #111 !important;
+      }
+      .report-table tbody tr:nth-child(even) {
+        background: #f8fafc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .report-table tfoot td {
+        font-weight: 700;
+        border-top: 2px solid #1a3a5c !important;
+        background: #eef2f7 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 5px 8px !important;
+      }
+      .align-right { text-align: right !important; }
+      .table-empty { color: #888 !important; font-style: italic; text-align: center !important; }
+
+      /* ── Print footer ── */
+      .print-footer {
+        display: flex !important;
+        justify-content: space-between;
+        border-top: 1px solid #d1d5db;
+        margin-top: 16px;
+        padding-top: 6px;
+        font-size: 7.5pt;
+        color: #888;
+      }
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
   <div class="page-shell report-shell" id="report-results">
+
+    <!-- PRINT HEADER (hidden on screen) -->
+    <div class="print-header">
+      <div class="print-header-left">
+        <div class="print-company">{{ company.name|default:"Sales Report" }}</div>
+        <div class="print-report-title">Sales Report &mdash; {{ period_label }}</div>
+      </div>
+      <div class="print-header-right">
+        <div>From: <strong>{{ date_from_str }}</strong> &nbsp; To: <strong>{{ date_to_str }}</strong></div>
+        <div>Generated: <strong id="print-date"></strong></div>
+      </div>
+    </div>
+
     <div class="page-header report-header">
       <div>
         <div class="eyebrow">Sales</div>
@@ -118,15 +297,60 @@
               <tr><td colspan="7" class="table-empty">No customer sales found.</td></tr>
             {% endfor %}
           </tbody>
+          {% if sales_by_customer.customers %}
+          <tfoot>
+            <tr>
+              <td colspan="3"><strong>Total</strong></td>
+              <td class="align-right"><strong>{{ sales_by_customer.total_revenue|indian_rupee }}</strong></td>
+              <td></td>
+              <td class="align-right"><strong>{{ sales_by_customer.total_revenue|indian_rupee }}</strong></td>
+              <td class="align-right"><strong>100%</strong></td>
+            </tr>
+          </tfoot>
+          {% endif %}
         </table>
       </div>
     </section>
+
+    <!-- PRINT: Daily Revenue Table (replaces chart, hidden on screen) -->
+    <div class="print-daily-table">
+      <div class="print-section-title">Daily Revenue Breakdown</div>
+      <table class="report-table">
+        <thead>
+          <tr><th>Date</th><th class="align-right">Revenue</th></tr>
+        </thead>
+        <tbody>
+          {% for row in daily_sales.daily %}
+            <tr>
+              <td>{{ row.date }}</td>
+              <td class="align-right">{{ row.revenue|indian_rupee }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="2" class="table-empty">No daily data.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PRINT FOOTER (hidden on screen) -->
+    <div class="print-footer">
+      <span>{{ company.name|default:"" }} &mdash; Sales Report</span>
+      <span id="print-footer-date"></span>
+    </div>
+
   </div>
 {% endblock %}
 
 {% block extra_js %}
   <script src="{% static 'js/charts.js' %}"></script>
   <script>
+    // Inject today's date into print header/footer
+    (function() {
+      const d = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      const els = document.querySelectorAll('#print-date, #print-footer-date');
+      els.forEach(el => el.textContent = d);
+    })();
+
     document.addEventListener('DOMContentLoaded', () => {
       window.buildLineChart('salesDailyChart', {{ daily_labels|safe }}, [{
         label: 'Revenue',

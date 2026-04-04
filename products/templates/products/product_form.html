@@ -31,7 +31,7 @@
           <select name="category" class="form-control">
             <option value="">Select category</option>
             {% for cat in categories %}
-              {% with selected_id=form_data.category|default:prod.category.id|stringformat:'s' %}
+              {% with selected_id=form_data.category|default:'' %}
               <option value="{{ cat.id }}" {% if selected_id == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.name }}</option>
               {% endwith %}
             {% endfor %}
@@ -41,7 +41,7 @@
           </button>
         </div>
       </div>
-      <div class="form-group mb-16"><label class="form-label required">Unit</label><select name="unit" class="form-control {% if form_errors.unit %}is-invalid{% endif %}" required><option value="">Select unit</option>{% for unit in units %}{% with selected_id=form_data.unit|default:prod.unit.id|stringformat:'s' %}<option value="{{ unit.id }}" {% if selected_id == unit.id|stringformat:'s' %}selected{% endif %}>{{ unit.name }} ({{ unit.short_name }})</option>{% endwith %}{% endfor %}</select>{% if form_errors.unit %}<span class="form-error">{{ form_errors.unit }}</span>{% endif %}</div>
+      <div class="form-group mb-16"><label class="form-label required">Unit</label><select name="unit" class="form-control {% if form_errors.unit %}is-invalid{% endif %}" required><option value="">Select unit</option>{% for unit in units %}{% with selected_id=form_data.unit|default:'' %}<option value="{{ unit.id }}" {% if selected_id == unit.id|stringformat:'s' %}selected{% endif %}>{{ unit.name }} ({{ unit.short_name }})</option>{% endwith %}{% endfor %}</select>{% if form_errors.unit %}<span class="form-error">{{ form_errors.unit }}</span>{% endif %}</div>
     </section>
 
     <section class="card">
@@ -59,7 +59,7 @@
     <section class="card">
       <div class="card-header"><h2 class="card-title">Tax Details</h2></div>
       <div class="form-group mb-16"><label class="form-label required" x-text="isService ? 'SAC Code' : 'HSN Code'"></label><input name="hsn_code" class="form-control {% if form_errors.hsn_code %}is-invalid{% endif %}" value="{% if form_data.hsn_code %}{{ form_data.hsn_code }}{% elif is_edit %}{{ prod.hsn_code }}{% endif %}" required><span class="form-hint">4-8 digit code for the product/service</span>{% if form_errors.hsn_code %}<span class="form-error">{{ form_errors.hsn_code }}</span>{% endif %}</div>
-      <div class="form-group mb-16"><label class="form-label">GST Rate</label><select name="gst_rate" x-model="gst" class="form-control {% if form_errors.gst_rate %}is-invalid{% endif %}">{% for rate in gst_rates %}{% with selected=form_data.gst_rate|default:prod.gst_rate|stringformat:'s' %}<option value="{{ rate }}" {% if selected == rate|stringformat:'s' %}selected{% endif %}>{{ rate }}%</option>{% endwith %}{% endfor %}</select>{% if form_errors.gst_rate %}<span class="form-error">{{ form_errors.gst_rate }}</span>{% endif %}</div>
+      <div class="form-group mb-16"><label class="form-label">GST Rate</label><select name="gst_rate" x-model="gst" class="form-control {% if form_errors.gst_rate %}is-invalid{% endif %}">{% for rate in gst_rates %}{% with selected=form_data.gst_rate|default:'' %}<option value="{{ rate }}" {% if selected == rate|stringformat:'s' %}selected{% endif %}>{{ rate }}%</option>{% endwith %}{% endfor %}</select>{% if form_errors.gst_rate %}<span class="form-error">{{ form_errors.gst_rate }}</span>{% endif %}</div>
       <div class="form-group"><label class="form-label">Cess Rate</label><input type="number" step="0.01" min="0" name="cess_rate" class="form-control {% if form_errors.cess_rate %}is-invalid{% endif %}" value="{% if form_data.cess_rate %}{{ form_data.cess_rate }}{% elif is_edit %}{{ prod.cess_rate }}{% else %}0{% endif %}">{% if form_errors.cess_rate %}<span class="form-error">{{ form_errors.cess_rate }}</span>{% endif %}</div>
     </section>
 
@@ -89,7 +89,7 @@
         {% if is_edit and prod.image %}
           <img src="{{ prod.image.url }}" alt="{{ prod.name }}" x-show="!preview">
         {% else %}
-          <div class="logo-placeholder" x-show="!preview">{{ form_data.name|default:prod.name|default:'P'|first|upper }}</div>
+          <div class="logo-placeholder" x-show="!preview">{% if is_edit %}{{ prod.name|default:'P'|first|upper }}{% else %}{{ form_data.name|default:'P'|first|upper }}{% endif %}</div>
         {% endif %}
         <img x-show="preview" :src="preview" class="logo-preview-img" alt="Preview">
       </div>

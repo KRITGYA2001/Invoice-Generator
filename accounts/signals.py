@@ -18,9 +18,9 @@ def password_reset_token_created(*, sender: object, instance: object, reset_pass
     context = {
         "reset_key": reset_key,
         "email": email,
-        "site_name": "Invoice Generator",
+        "site_name": "BillMint",
     }
-    subject = "Password Reset Request - Invoice Generator"
+    subject = "Password Reset Request - BillMint"
     text_content = render_to_string("accounts/password_reset_email.txt", context)
     html_content = render_to_string("accounts/password_reset_email.html", context)
 

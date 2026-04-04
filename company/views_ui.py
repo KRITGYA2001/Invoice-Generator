@@ -83,7 +83,11 @@ class OnboardingView(View):
 
     def get(self, request: HttpRequest) -> HttpResponse:
         company = getattr(request.user, "company_profile", None)
-        if _onboarding_complete(company):
+
+        # Only redirect to dashboard when arriving fresh (no explicit step in URL).
+        # When redirected here with ?step=2 or ?step=3 after saving a previous step,
+        # skip the completion check so the next step is shown instead of the dashboard.
+        if "step" not in request.GET and _onboarding_complete(company):
             return redirect("core:dashboard")
 
         current_step = _step_value(request)
@@ -196,11 +200,11 @@ class OnboardingView(View):
         due_days_raw = (request.POST.get("default_due_days") or "").strip()
         settings_obj.invoice_counter = int(counter_raw) if counter_raw.isdigit() else settings_obj.invoice_counter
         settings_obj.default_due_days = int(due_days_raw) if due_days_raw.isdigit() else settings_obj.default_due_days
-        settings_obj.default_transport = (request.POST.get("default_transport") or settings_obj.default_transport).strip()
+        settings_obj.default_transport = (request.POST.get("default_transport") or settings_obj.default_transport or "").strip()
         settings_obj.invoice_terms = (request.POST.get("invoice_terms") or "").strip()
         settings_obj.save()
 
-        messages.success(request, "Setup complete! Welcome to Invoice Generator.")
+        messages.success(request, "Setup complete! Welcome to BillMint.")
         return redirect("core:dashboard")
 
 

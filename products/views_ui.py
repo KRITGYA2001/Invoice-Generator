@@ -290,7 +290,11 @@ class ProductUpdateView(OnboardingCheckMixin, View):
             **_product_base_context(company),
             "is_edit": True,
             "product": product,
-            "form_data": {},
+            "form_data": {
+                "category": str(product.category_id) if product.category_id else "",
+                "unit": str(product.unit_id) if product.unit_id else "",
+                "gst_rate": str(int(product.gst_rate)),
+            },
             "form_errors": {},
             "page_title": f"Edit {product.name}",
         }

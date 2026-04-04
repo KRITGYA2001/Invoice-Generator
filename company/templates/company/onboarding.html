@@ -171,7 +171,7 @@
 {% endif %}
 
 {% if current_step == 3 %}
-<form method="POST" x-data="{ loading: false }">
+<form method="POST" x-data="{ loading: false }" @submit="loading = true">
   {% csrf_token %}
   <input type="hidden" name="step" value="3">
 
@@ -213,7 +213,7 @@
 
   <div class="flex-between">
     <a href="{% url 'company_ui:onboarding' %}?step=2" class="btn btn-secondary">&larr; Back</a>
-    <button type="submit" class="btn btn-accent" @click="loading = true" :disabled="loading">
+    <button type="submit" class="btn btn-accent" :disabled="loading">
       <span x-show="!loading">Complete Setup</span>
       <span x-show="loading" class="flex-center gap-8"><span class="spinner"></span>Saving...</span>
     </button>
