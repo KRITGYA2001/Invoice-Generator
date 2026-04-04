@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Sign in{% endblock %} · BillMint</title>
+  <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
@@ -23,17 +24,7 @@
 
       <!-- Logo -->
       <div class="auth-logo-row">
-        <div class="auth-logo-box">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                  stroke="#0a0a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <polyline points="14 2 14 8 20 8"
-                      stroke="#0a0a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="9" y1="13" x2="15" y2="13" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round"/>
-            <line x1="9" y1="17" x2="13" y2="17" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <span class="auth-logo-name">BillMint</span>
+        <img src="{% static 'img/logo.png' %}" alt="BillMint" class="auth-logo-img">
       </div>
 
       <!-- Headline -->

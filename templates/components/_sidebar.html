@@ -7,10 +7,9 @@
 {% url 'company_ui:profile' as company_profile_url %}
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="sidebar-logo-text">
-      {{ company.company_name|default:"BillMint"|truncatechars:22 }}
-    </div>
-    <div class="sidebar-logo-sub">BillMint</div>
+    <a href="{% url 'core:dashboard' %}" class="sidebar-logo-img-link">
+      <img src="{% static 'img/logo.png' %}" alt="BillMint" class="sidebar-logo-img">
+    </a>
   </div>
 
   <nav class="sidebar-nav">

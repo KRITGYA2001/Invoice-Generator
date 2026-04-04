@@ -88,23 +88,18 @@
 .auth-logo-row {
   display: flex;
   align-items: center;
-  gap: 10px;
   margin-bottom: 56px;
 }
 
-.auth-logo-box {
-  width: 40px; height: 40px;
-  background: var(--a-yellow);
-  border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-
-.auth-logo-name {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--a-white);
-  letter-spacing: -0.5px;
+.auth-logo-img {
+  display: block;
+  width: 180px;
+  height: auto;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  object-fit: contain;
 }
 
 /* --- Headline --- */

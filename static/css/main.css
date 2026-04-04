@@ -118,20 +118,25 @@ img {
 }
 
 .sidebar-logo {
-  padding: 20px 16px 16px;
+  padding: 14px 14px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.sidebar-logo-text {
-  font-size: var(--text-lg);
-  font-weight: 700;
-  letter-spacing: 0.01em;
+.sidebar-logo-img-link {
+  display: block;
+  text-decoration: none;
 }
 
-.sidebar-logo-sub {
-  font-size: var(--text-xs);
-  opacity: 0.55;
-  margin-top: 2px;
+.sidebar-logo-img {
+  display: block;
+  width: 100%;
+  max-width: 152px;
+  height: auto;
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  object-fit: contain;
 }
 
 .sidebar-nav {
