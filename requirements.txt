@@ -1,6 +1,7 @@
 asgiref==3.11.1
 brotli==1.2.0
 cffi==2.0.0
+charset-normalizer==3.4.7
 click==8.3.1
 colorama==0.4.6
 cssselect2==0.9.0
@@ -14,6 +15,7 @@ djangorestframework_simplejwt==5.5.1
 drf-api-tracking==1.8.4
 fonttools==4.62.1
 ghp-import==2.1.0
+greenlet==3.3.2
 Jinja2==3.1.6
 Markdown==3.10.2
 MarkupSafe==3.0.3
@@ -24,9 +26,11 @@ packaging==26.0
 pathspec==1.0.4
 pillow==12.2.0
 platformdirs==4.9.4
+playwright==1.58.0
 psycopg2-binary==2.9.11
 pycparser==3.0
 pydyf==0.12.1
+pyee==13.0.1
 PyJWT==2.12.1
 pyphen==0.17.2
 python-dateutil==2.9.0.post0
@@ -38,8 +42,9 @@ six==1.17.0
 sqlparse==0.5.5
 tinycss2==1.5.1
 tinyhtml5==2.1.0
+typing_extensions==4.15.0
 tzdata==2025.3
 watchdog==6.0.0
-playwright
+weasyprint==68.1
 webencodings==0.5.1
 zopfli==0.4.1
