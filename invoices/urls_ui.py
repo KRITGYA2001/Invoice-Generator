@@ -11,6 +11,7 @@ from invoices.views_ui import (
 	InvoiceListView,
 	InvoicePDFView,
 	InvoiceUpdateView,
+	ProductSearchJsonView,
 	ProductSearchView,
 )
 
@@ -20,6 +21,7 @@ urlpatterns = [
 	path("create/", InvoiceCreateView.as_view(), name="invoice-create"),
 	path("customer-search/", CustomerSearchView.as_view(), name="customer-search"),
 	path("product-search/", ProductSearchView.as_view(), name="product-search"),
+	path("product-search-json/", ProductSearchJsonView.as_view(), name="product-search-json"),
 	path("<uuid:pk>/", InvoiceDetailView.as_view(), name="invoice-detail"),
 	path("<uuid:pk>/edit/", InvoiceUpdateView.as_view(), name="invoice-edit"),
 	path("<uuid:pk>/issue/", InvoiceIssueView.as_view(), name="invoice-issue"),

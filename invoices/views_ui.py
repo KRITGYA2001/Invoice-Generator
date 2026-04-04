@@ -718,17 +718,60 @@ class ProductSearchView(View):
         company = request.user.company_profile
         query = (request.GET.get("q") or "").strip()
 
-        products = []
-        if len(query) >= 2:
-            products = (
-                Product.objects.filter(company=company, is_active=True)
-                .select_related("unit")
-                .filter(
-                    Q(name__icontains=query)
-                    | Q(sku__icontains=query)
-                    | Q(hsn_code__icontains=query)
-                )
-                .order_by("name")[:8]
-            )
+        base_qs = (
+            Product.objects.filter(company=company, is_active=True)
+            .select_related("unit")
+            .order_by("name")
+        )
+
+        if query:
+            products = base_qs.filter(
+                Q(name__icontains=query)
+                | Q(sku__icontains=query)
+                | Q(hsn_code__icontains=query)
+            )[:8]
+        else:
+            products = base_qs[:8]
 
         return render(request, "invoices_ui/_product_results.html", {"products": products})
+
+
+@method_decorator(login_required, name="dispatch")
+class ProductSearchJsonView(View):
+    def get(self, request: HttpRequest) -> HttpResponse:
+        from django.http import JsonResponse
+        company = request.user.company_profile
+        query = (request.GET.get("q") or "").strip()
+
+        base_qs = (
+            Product.objects.filter(company=company, is_active=True)
+            .select_related("unit")
+            .order_by("name")
+        )
+
+        if query:
+            qs = base_qs.filter(
+                Q(name__icontains=query)
+                | Q(sku__icontains=query)
+                | Q(hsn_code__icontains=query)
+            )[:10]
+        else:
+            qs = base_qs[:10]
+
+        data = [
+            {
+                "id": str(p.id),
+                "name": p.name,
+                "hsn_code": p.hsn_code or "",
+                "sku": p.sku or "",
+                "unit": p.unit.short_name if p.unit else "Pcs",
+                "selling_price": float(p.selling_price),
+                "gst_rate": float(p.gst_rate),
+                "cess_rate": float(p.cess_rate),
+                "track_inventory": p.track_inventory,
+                "current_stock": float(p.current_stock) if p.track_inventory else None,
+                "is_low_stock": p.is_low_stock if p.track_inventory else False,
+            }
+            for p in qs
+        ]
+        return JsonResponse(data, safe=False)

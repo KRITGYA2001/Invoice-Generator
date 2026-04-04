@@ -195,19 +195,41 @@
                   <td x-text="index + 1" class="text-muted text-sm text-center"></td>
 
                   <td>
-                    <div style="position:relative" x-data="{ showProd: false, q: '' }">
+                    <div style="position:relative" x-data="{ showProd: false }">
                       <input type="text"
                              class="form-control"
                              :placeholder="'Search or type description...'"
                              x-model="line.name"
-                             @focus="showProd = true"
-                             hx-get="{% url 'invoices_ui:product-search' %}"
-                             hx-trigger="input changed delay:300ms"
-                             :hx-vals="JSON.stringify({ q: line.name })"
-                             :hx-target="'#prod-results-' + line.id"
+                             @focus="showProd = true; loadInitialProducts()"
+                             @input="showProd = true; searchProducts(line.name)"
+                             @keydown.escape="showProd = false"
                              autocomplete="off"
                              :name="'lines[' + index + '][name]'">
-                      <div :id="'prod-results-' + line.id" class="search-dropdown" x-show="showProd" @click.outside="showProd = false"></div>
+                      <div class="search-dropdown" x-show="showProd" @click.outside="showProd = false" style="display:none">
+                        <template x-if="allProducts.length > 0">
+                          <div class="search-results-list">
+                            <template x-for="p in allProducts" :key="p.id">
+                              <div class="search-result-item"
+                                   style="cursor:pointer"
+                                   @mousedown.prevent="selectProduct(index, p); line.name = p.name; showProd = false">
+                                <div class="font-bold text-sm" x-text="p.name"></div>
+                                <div class="text-xs text-muted">
+                                  <span x-text="'HSN: ' + p.hsn_code"></span> |
+                                  <span x-text="p.unit"></span> |
+                                  <span x-text="'Rs ' + p.selling_price"></span> |
+                                  <span x-text="'GST ' + p.gst_rate + '%'"></span>
+                                  <template x-if="p.track_inventory">
+                                    <span x-text="' | Stock: ' + p.current_stock + (p.is_low_stock ? ' ⚠' : '')"></span>
+                                  </template>
+                                </div>
+                              </div>
+                            </template>
+                          </div>
+                        </template>
+                        <template x-if="allProducts.length === 0">
+                          <div class="search-no-results">No products found</div>
+                        </template>
+                      </div>
                     </div>
                     <input type="text"
                            class="form-control"
@@ -341,7 +363,12 @@
 function invoiceApp() {
   return {
     lines: [],
+    allProducts: [],
+    _productCache: null,
+    _searchTimer: null,
+    _searchUrl: '{% url "invoices_ui:product-search-json" %}',
     isInterstate: false,
+    placeOfSupply: '{{ invoice.place_of_supply|default:company.state|escapejs }}',
     placeOfSupplyCode: '{{ invoice.place_of_supply_code|default:company.state_code }}',
     customerStateCode: '{{ invoice.customer_state_code|default:'' }}',
     customerStateName: '{{ invoice.customer_state|default:''|escapejs }}',
@@ -506,6 +533,38 @@ function invoiceApp() {
       this.customerStateName = stateName;
       this.$dispatch('customer-selected', { id, name, gstin, stateCode, stateName, mobile });
       this.updateInterstate();
+    },
+
+    async loadInitialProducts() {
+      if (this._productCache) {
+        this.allProducts = this._productCache;
+        return;
+      }
+      try {
+        const res = await fetch(this._searchUrl);
+        const data = await res.json();
+        this._productCache = data;
+        this.allProducts = data;
+      } catch (e) {
+        this.allProducts = [];
+      }
+    },
+
+    searchProducts(query) {
+      clearTimeout(this._searchTimer);
+      const q = (query || '').trim();
+      if (!q) {
+        this.loadInitialProducts();
+        return;
+      }
+      this._searchTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(this._searchUrl + '?q=' + encodeURIComponent(q));
+          this.allProducts = await res.json();
+        } catch (e) {
+          this.allProducts = [];
+        }
+      }, 300);
     },
 
     selectProduct(index, product) {
