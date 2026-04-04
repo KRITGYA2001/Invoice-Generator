@@ -6,10 +6,126 @@
 
 {% block extra_head %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Print-only elements hidden on screen ── */
+    .print-header,
+    .print-ageing-summary,
+    .print-footer { display: none; }
+
+    @media print {
+      @page { size: A4 portrait; margin: 14mm 12mm 16mm 12mm; }
+
+      .no-print,
+      .sidebar,
+      .topbar,
+      .report-actions,
+      .dashboard-grid { display: none !important; }
+
+      body { background: #fff !important; font-size: 9pt; color: #111; }
+      .app-layout { display: block !important; }
+      .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+      .page-shell { padding: 0 !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; }
+      .card, .stat-card { box-shadow: none !important; border: 1px solid #d1d5db !important; border-radius: 4px !important; box-sizing: border-box !important; }
+
+      /* ── Print header ── */
+      .print-header {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 2.5px solid #0a0a0a;
+        padding-bottom: 8px;
+        margin-bottom: 14px;
+      }
+      .print-header-left .print-company { font-size: 13pt; font-weight: 700; color: #0a0a0a; }
+      .print-header-left .print-report-title { font-size: 10pt; font-weight: 600; margin-top: 2px; }
+      .print-header-right { text-align: right; font-size: 8pt; color: #555; line-height: 1.6; }
+
+      .report-header { display: none !important; }
+
+      /* ── Stat cards ── */
+      .metric-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
+      }
+      .stat-card {
+        padding: 8px 12px !important;
+        background: #f8fafc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .stat-label { font-size: 7.5pt !important; color: #555 !important; text-transform: uppercase; letter-spacing: 0.03em; }
+      .stat-value { font-size: 11pt !important; font-weight: 700 !important; color: #0a0a0a !important; margin-top: 2px; }
+
+      /* ── Print chart replacement: ageing bucket summary table ── */
+      .print-ageing-summary {
+        display: block !important;
+        margin-bottom: 12px !important;
+        break-inside: avoid;
+      }
+
+      /* ── Stack list ── */
+      .stack-list { padding: 4px 12px 8px !important; }
+      .stack-item {
+        display: flex !important;
+        justify-content: space-between;
+        padding: 4px 0 !important;
+        border-bottom: 1px solid #eee;
+        font-size: 8pt;
+      }
+      .stack-title { font-size: 8pt !important; font-weight: 500; }
+      .stack-meta { font-size: 7pt !important; color: #666; }
+      .stack-value { font-size: 8pt !important; font-weight: 600; }
+
+      /* ── Card headers ── */
+      .card-header { padding: 8px 12px 4px !important; }
+      .card-kicker { font-size: 7pt !important; color: #888 !important; text-transform: uppercase; letter-spacing: 0.05em; }
+      .card-title { font-size: 9.5pt !important; font-weight: 700 !important; margin: 0 !important; }
+      .card { margin-bottom: 10px !important; break-inside: avoid; }
+      .mt-16 { margin-top: 0 !important; }
+
+      /* ── Tables ── */
+      .table-wrap { overflow: visible !important; width: 100% !important; max-width: 100% !important; }
+      .report-table { table-layout: fixed !important; width: 100% !important; max-width: 100% !important; word-break: break-word !important; border-collapse: collapse !important; font-size: 8pt !important; }
+      .report-table thead tr { background: #0a0a0a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .report-table thead th { color: #fff !important; font-weight: 600 !important; padding: 5px 8px !important; border: 1px solid #0a0a0a !important; font-size: 7.5pt !important; }
+      .report-table tbody td { padding: 4px 8px !important; border: 1px solid #d1d5db !important; color: #111 !important; }
+      .report-table tbody tr:nth-child(even) { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .report-table tfoot td { font-weight: 700; border-top: 2px solid #0a0a0a !important; background: #f5f5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 5px 8px !important; }
+      .align-right { text-align: right !important; }
+      .table-empty { color: #888 !important; font-style: italic; text-align: center !important; }
+
+      /* ── Print footer ── */
+      .print-footer {
+        display: flex !important;
+        justify-content: space-between;
+        border-top: 1px solid #d1d5db;
+        margin-top: 16px;
+        padding-top: 6px;
+        font-size: 7.5pt;
+        color: #666;
+      }
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
   <div class="page-shell report-shell" id="report-results">
+
+    <!-- Print-only header -->
+    <div class="print-header">
+      <div class="print-header-left">
+        <div class="print-company">{{ company.company_name|default:"BillMint" }}</div>
+        <div class="print-report-title">Ageing Report &middot; As of {{ ageing_report.as_of_date }}</div>
+      </div>
+      <div class="print-header-right">
+        <span id="print-date"></span><br>
+        Printed from BillMint
+      </div>
+    </div>
+
+    <!-- Screen header -->
     <div class="page-header report-header">
       <div>
         <div class="eyebrow">Receivables</div>
@@ -22,13 +138,15 @@
       </div>
     </div>
 
+    <!-- Stat cards -->
     <section class="metric-grid">
       <article class="stat-card"><div class="stat-label">Current</div><div class="stat-value">{{ ageing_report.buckets.not_due.amount|indian_rupee }}</div></article>
-      <article class="stat-card"><div class="stat-label">0-30 days</div><div class="stat-value">{{ ageing_report.buckets.days_0_30.amount|indian_rupee }}</div></article>
-      <article class="stat-card"><div class="stat-label">31-60 days</div><div class="stat-value">{{ ageing_report.buckets.days_31_60.amount|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">0–30 days</div><div class="stat-value">{{ ageing_report.buckets.days_0_30.amount|indian_rupee }}</div></article>
+      <article class="stat-card"><div class="stat-label">31–60 days</div><div class="stat-value">{{ ageing_report.buckets.days_31_60.amount|indian_rupee }}</div></article>
       <article class="stat-card"><div class="stat-label">90+ days</div><div class="stat-value">{{ ageing_report.buckets.days_90_plus.amount|indian_rupee }}</div></article>
     </section>
 
+    <!-- Screen-only: chart + bucket list -->
     <section class="dashboard-grid">
       <article class="card chart-card chart-card-wide">
         <div class="card-header"><div><div class="card-kicker">Ageing</div><h2 class="card-title">Outstanding balance by age bucket</h2></div></div>
@@ -38,19 +156,55 @@
         <div class="card-header"><div><div class="card-kicker">Buckets</div><h2 class="card-title">Summary counts</h2></div></div>
         <div class="stack-list">
           <div class="stack-item"><div><div class="stack-title">Current</div><div class="stack-meta">{{ ageing_report.buckets.not_due.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.not_due.amount|indian_rupee }}</div></div>
-          <div class="stack-item"><div><div class="stack-title">0-30 days</div><div class="stack-meta">{{ ageing_report.buckets.days_0_30.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.days_0_30.amount|indian_rupee }}</div></div>
-          <div class="stack-item"><div><div class="stack-title">31-60 days</div><div class="stack-meta">{{ ageing_report.buckets.days_31_60.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.days_31_60.amount|indian_rupee }}</div></div>
-          <div class="stack-item"><div><div class="stack-title">61-90 days</div><div class="stack-meta">{{ ageing_report.buckets.days_61_90.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.days_61_90.amount|indian_rupee }}</div></div>
+          <div class="stack-item"><div><div class="stack-title">0–30 days</div><div class="stack-meta">{{ ageing_report.buckets.days_0_30.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.days_0_30.amount|indian_rupee }}</div></div>
+          <div class="stack-item"><div><div class="stack-title">31–60 days</div><div class="stack-meta">{{ ageing_report.buckets.days_31_60.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.days_31_60.amount|indian_rupee }}</div></div>
+          <div class="stack-item"><div><div class="stack-title">61–90 days</div><div class="stack-meta">{{ ageing_report.buckets.days_61_90.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.days_61_90.amount|indian_rupee }}</div></div>
           <div class="stack-item"><div><div class="stack-title">90+ days</div><div class="stack-meta">{{ ageing_report.buckets.days_90_plus.count }} invoices</div></div><div class="stack-value">{{ ageing_report.buckets.days_90_plus.amount|indian_rupee }}</div></div>
         </div>
       </article>
     </section>
 
+    <!-- Print-only: bucket summary table (replaces chart) -->
+    <section class="print-ageing-summary">
+      <article class="card">
+        <div class="card-header"><div><div class="card-kicker">Buckets</div><h2 class="card-title">Outstanding balance by age bucket</h2></div></div>
+        <div class="table-wrap">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Bucket</th>
+                <th class="align-right">Invoices</th>
+                <th class="align-right">Amount (&#8377;)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Current (not due)</td><td class="align-right">{{ ageing_report.buckets.not_due.count }}</td><td class="align-right">{{ ageing_report.buckets.not_due.amount|indian_rupee }}</td></tr>
+              <tr><td>0–30 days overdue</td><td class="align-right">{{ ageing_report.buckets.days_0_30.count }}</td><td class="align-right">{{ ageing_report.buckets.days_0_30.amount|indian_rupee }}</td></tr>
+              <tr><td>31–60 days overdue</td><td class="align-right">{{ ageing_report.buckets.days_31_60.count }}</td><td class="align-right">{{ ageing_report.buckets.days_31_60.amount|indian_rupee }}</td></tr>
+              <tr><td>61–90 days overdue</td><td class="align-right">{{ ageing_report.buckets.days_61_90.count }}</td><td class="align-right">{{ ageing_report.buckets.days_61_90.amount|indian_rupee }}</td></tr>
+              <tr><td>90+ days overdue</td><td class="align-right">{{ ageing_report.buckets.days_90_plus.count }}</td><td class="align-right">{{ ageing_report.buckets.days_90_plus.amount|indian_rupee }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <!-- Overdue invoices table -->
     <section class="card mt-16">
       <div class="card-header"><div><div class="card-kicker">Invoices</div><h2 class="card-title">Overdue invoices</h2></div></div>
       <div class="table-wrap">
         <table class="report-table">
-          <thead><tr><th>Invoice</th><th>Customer</th><th>Invoice date</th><th>Due date</th><th class="align-right">Days overdue</th><th class="align-right">Amount</th><th>Bucket</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Customer</th>
+              <th>Invoice date</th>
+              <th>Due date</th>
+              <th class="align-right">Days overdue</th>
+              <th class="align-right">Amount</th>
+              <th>Bucket</th>
+            </tr>
+          </thead>
           <tbody>
             {% for row in ageing_report.invoices %}
               <tr>
@@ -69,6 +223,13 @@
         </table>
       </div>
     </section>
+
+    <!-- Print footer -->
+    <div class="print-footer">
+      <span>{{ company.company_name|default:"BillMint" }} &middot; Ageing Report &middot; As of {{ ageing_report.as_of_date }}</span>
+      <span id="print-footer-date"></span>
+    </div>
+
   </div>
 {% endblock %}
 
@@ -76,7 +237,10 @@
   <script src="{% static 'js/charts.js' %}"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      window.buildDoughnutChart('ageingChart', {{ ageing_labels|safe }}, {{ ageing_values|safe }}, ['#16a34a', '#2563eb', '#c8832a', '#d97706', '#dc2626']);
+      window.buildDoughnutChart('ageingChart', {{ ageing_labels|safe }}, {{ ageing_values|safe }}, ['#16a34a', '#2563eb', '#f5c842', '#d97706', '#dc2626']);
+
+      const d = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      document.querySelectorAll('#print-date, #print-footer-date').forEach(el => el.textContent = d);
     });
   </script>
 {% endblock %}

@@ -37,7 +37,7 @@ window.buildLineChart = (canvasId, labels, datasets, options = {}) => {
   });
 };
 
-window.buildBarChart = (canvasId, labels, values, label, colors = ["#1a3a5c"], options = {}) => {
+window.buildBarChart = (canvasId, labels, values, label, colors = ["#f5c842"], options = {}) => {
   const canvas = document.getElementById(canvasId);
   if (!canvas || typeof Chart === "undefined") {
     return null;
@@ -113,8 +113,8 @@ window.buildRevenueTrendChart = (canvasId, labels, revenueData, invoiceData) => 
   {
     label: "Revenue",
     data: revenueData,
-    borderColor: "#1a3a5c",
-    backgroundColor: "rgba(26,58,92,0.15)",
+    borderColor: "#f5c842",
+    backgroundColor: "rgba(245,200,66,0.15)",
     tension: 0.3,
     yAxisID: "y",
     fill: true,
@@ -122,8 +122,8 @@ window.buildRevenueTrendChart = (canvasId, labels, revenueData, invoiceData) => 
   {
     label: "Invoices",
     data: invoiceData,
-    borderColor: "#c8832a",
-    backgroundColor: "rgba(200,131,42,0.12)",
+    borderColor: "#1f1f1f",
+    backgroundColor: "rgba(31,31,31,0.12)",
     tension: 0.2,
     yAxisID: "y1",
   },

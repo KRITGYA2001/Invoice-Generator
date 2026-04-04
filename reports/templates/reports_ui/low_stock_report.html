@@ -3,8 +3,142 @@
 
 {% block title %}Low Stock Report{% endblock %}
 
+{% block extra_head %}
+  <style>
+    /* ── Print-only elements hidden on screen ── */
+    .print-header,
+    .print-footer { display: none; }
+
+    @media print {
+      @page { size: A4 portrait; margin: 14mm 12mm 16mm 12mm; }
+
+      .no-print,
+      .sidebar,
+      .topbar,
+      .report-actions { display: none !important; }
+
+      body { background: #fff !important; font-size: 9pt; color: #111; }
+      .app-layout { display: block !important; }
+      .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+      .page-shell { padding: 0 !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; }
+      .card, .stat-card { box-shadow: none !important; border: 1px solid #d1d5db !important; border-radius: 4px !important; box-sizing: border-box !important; }
+
+      /* ── Print header ── */
+      .print-header {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 2.5px solid #0a0a0a;
+        padding-bottom: 8px;
+        margin-bottom: 14px;
+      }
+      .print-header-left .print-company { font-size: 13pt; font-weight: 700; color: #0a0a0a; }
+      .print-header-left .print-report-title { font-size: 10pt; font-weight: 600; margin-top: 2px; }
+      .print-header-right { text-align: right; font-size: 8pt; color: #555; line-height: 1.6; }
+
+      .report-header { display: none !important; }
+
+      /* ── Stat cards ── */
+      .metric-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
+      }
+      .stat-card {
+        padding: 8px 12px !important;
+        background: #f8fafc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .stat-label { font-size: 7.5pt !important; color: #555 !important; text-transform: uppercase; letter-spacing: 0.03em; }
+      .stat-value { font-size: 11pt !important; font-weight: 700 !important; color: #0a0a0a !important; margin-top: 2px; }
+
+      /* ── Card headers ── */
+      .card-header { padding: 8px 12px 4px !important; }
+      .card-kicker { font-size: 7pt !important; color: #888 !important; text-transform: uppercase; letter-spacing: 0.05em; }
+      .card-title { font-size: 9.5pt !important; font-weight: 700 !important; margin: 0 !important; }
+      .card { margin-bottom: 10px !important; break-inside: avoid; }
+
+      /* ── Tables ── */
+      .table-wrap { overflow: visible !important; width: 100% !important; max-width: 100% !important; }
+      .report-table {
+        table-layout: fixed !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        word-break: break-word !important;
+        border-collapse: collapse !important;
+        font-size: 8pt !important;
+      }
+      .report-table thead tr {
+        background: #0a0a0a !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .report-table thead th {
+        color: #fff !important;
+        font-weight: 600 !important;
+        padding: 5px 8px !important;
+        border: 1px solid #0a0a0a !important;
+        font-size: 7.5pt !important;
+      }
+      .report-table tbody td {
+        padding: 4px 8px !important;
+        border: 1px solid #d1d5db !important;
+        color: #111 !important;
+      }
+      .report-table tbody tr:nth-child(even) {
+        background: #f8fafc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      /* Highlight rows where shortage is high (stock = 0) */
+      .row-out-of-stock td {
+        background: #fef2f2 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .report-table tfoot td {
+        font-weight: 700;
+        border-top: 2px solid #0a0a0a !important;
+        background: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 5px 8px !important;
+      }
+      .align-right { text-align: right !important; }
+      .table-empty { color: #888 !important; font-style: italic; text-align: center !important; }
+
+      /* ── Print footer ── */
+      .print-footer {
+        display: flex !important;
+        justify-content: space-between;
+        border-top: 1px solid #d1d5db;
+        margin-top: 16px;
+        padding-top: 6px;
+        font-size: 7.5pt;
+        color: #666;
+      }
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
   <div class="page-shell report-shell" id="report-results">
+
+    <!-- Print-only header -->
+    <div class="print-header">
+      <div class="print-header-left">
+        <div class="print-company">{{ company.company_name|default:"BillMint" }}</div>
+        <div class="print-report-title">Low Stock Report &middot; {{ low_stock_report.count }} products at or below minimum</div>
+      </div>
+      <div class="print-header-right">
+        <span id="print-date"></span><br>
+        Printed from BillMint
+      </div>
+    </div>
+
+    <!-- Screen header -->
     <div class="page-header report-header">
       <div>
         <div class="eyebrow">Inventory</div>
@@ -17,6 +151,7 @@
       </div>
     </div>
 
+    <!-- Stat cards -->
     <section class="metric-grid">
       <article class="stat-card"><div class="stat-label">Count</div><div class="stat-value">{{ low_stock_report.count }}</div></article>
       <article class="stat-card"><div class="stat-label">Generated</div><div class="stat-value">{{ low_stock_report.generated_at|slice:":10" }}</div></article>
@@ -24,14 +159,26 @@
       <article class="stat-card"><div class="stat-label">Status</div><div class="stat-value">Open</div></article>
     </section>
 
+    <!-- Low stock table -->
     <section class="card">
       <div class="card-header"><div><div class="card-kicker">Products</div><h2 class="card-title">Low stock products</h2></div></div>
       <div class="table-wrap">
         <table class="report-table">
-          <thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>Unit</th><th class="align-right">Current</th><th class="align-right">Minimum</th><th class="align-right">Shortage</th><th class="align-right">Selling price</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>SKU</th>
+              <th>Category</th>
+              <th>Unit</th>
+              <th class="align-right">Current</th>
+              <th class="align-right">Minimum</th>
+              <th class="align-right">Shortage</th>
+              <th class="align-right">Selling price</th>
+            </tr>
+          </thead>
           <tbody>
             {% for row in low_stock_report.products %}
-              <tr>
+              <tr {% if row.current_stock == 0 %}class="row-out-of-stock"{% endif %}>
                 <td>{{ row.name }}</td>
                 <td>{{ row.sku|default:"-" }}</td>
                 <td>{{ row.category }}</td>
@@ -45,8 +192,33 @@
               <tr><td colspan="8" class="table-empty">No low stock products found.</td></tr>
             {% endfor %}
           </tbody>
+          {% if low_stock_report.products %}
+          <tfoot>
+            <tr>
+              <td colspan="6"><strong>Total products</strong></td>
+              <td class="align-right"><strong>{{ low_stock_report.count }}</strong></td>
+              <td></td>
+            </tr>
+          </tfoot>
+          {% endif %}
         </table>
       </div>
     </section>
+
+    <!-- Print footer -->
+    <div class="print-footer">
+      <span>{{ company.company_name|default:"BillMint" }} &middot; Low Stock Report</span>
+      <span id="print-footer-date"></span>
+    </div>
+
   </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const d = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      document.querySelectorAll('#print-date, #print-footer-date').forEach(el => el.textContent = d);
+    });
+  </script>
 {% endblock %}

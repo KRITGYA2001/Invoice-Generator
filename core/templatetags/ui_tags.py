@@ -102,7 +102,7 @@ def active_nav_contains(request, keyword: str) -> str:
 @register.filter
 def party_color(letter):
     """Returns a brand color mapped from first letter for avatar variation."""
-    colors = ["#1a3a5c", "#2d5986", "#c8832a", "#16a34a", "#2563eb"]
+    colors = ["#0a0a0a", "#1f1f1f", "#f5c842", "#16a34a", "#2563eb"]
     text = str(letter or "A")
     idx = (ord(text[:1].upper()) - ord("A")) % len(colors)
     return colors[idx]

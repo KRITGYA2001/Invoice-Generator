@@ -4,8 +4,125 @@
 
 {% block title %}HSN Summary{% endblock %}
 
+{% block extra_head %}
+  <style>
+    /* ── Print-only elements hidden on screen ── */
+    .print-header,
+    .print-footer { display: none; }
+
+    @media print {
+      @page { size: A4 landscape; margin: 12mm 10mm 14mm 10mm; }
+
+      .no-print,
+      .sidebar,
+      .topbar,
+      .report-actions,
+      .report-toolbar,
+      .filter-bar { display: none !important; }
+
+      body { background: #fff !important; font-size: 8pt; color: #111; }
+      .app-layout { display: block !important; }
+      .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+      .page-shell { padding: 0 !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; }
+      .card, .stat-card { box-shadow: none !important; border: 1px solid #d1d5db !important; border-radius: 4px !important; box-sizing: border-box !important; }
+
+      /* ── Print header ── */
+      .print-header {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 2.5px solid #0a0a0a;
+        padding-bottom: 8px;
+        margin-bottom: 14px;
+      }
+      .print-header-left .print-company { font-size: 13pt; font-weight: 700; color: #0a0a0a; }
+      .print-header-left .print-report-title { font-size: 10pt; font-weight: 600; margin-top: 2px; }
+      .print-header-right { text-align: right; font-size: 8pt; color: #555; line-height: 1.6; }
+
+      .report-header { display: none !important; }
+
+      /* ── Card headers ── */
+      .card-header { padding: 8px 12px 4px !important; }
+      .card-kicker { font-size: 7pt !important; color: #888 !important; text-transform: uppercase; letter-spacing: 0.05em; }
+      .card-title { font-size: 9.5pt !important; font-weight: 700 !important; margin: 0 !important; }
+      .card { margin-bottom: 10px !important; }
+
+      /* ── Tables ── */
+      .table-wrap { overflow: visible !important; width: 100% !important; max-width: 100% !important; }
+      .report-table {
+        table-layout: fixed !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        word-break: break-word !important;
+        border-collapse: collapse !important;
+        font-size: 7.5pt !important;
+      }
+      .report-table thead tr {
+        background: #0a0a0a !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .report-table thead th {
+        color: #fff !important;
+        font-weight: 600 !important;
+        padding: 5px 6px !important;
+        border: 1px solid #0a0a0a !important;
+        font-size: 7pt !important;
+        white-space: nowrap;
+      }
+      .report-table tbody td {
+        padding: 4px 6px !important;
+        border: 1px solid #d1d5db !important;
+        color: #111 !important;
+        vertical-align: top;
+      }
+      .report-table tbody tr:nth-child(even) {
+        background: #f8fafc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .report-table tfoot td {
+        font-weight: 700;
+        border-top: 2px solid #0a0a0a !important;
+        background: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 5px 6px !important;
+      }
+      .align-right { text-align: right !important; }
+      .table-empty { color: #888 !important; font-style: italic; text-align: center !important; }
+
+      /* ── Print footer ── */
+      .print-footer {
+        display: flex !important;
+        justify-content: space-between;
+        border-top: 1px solid #d1d5db;
+        margin-top: 16px;
+        padding-top: 6px;
+        font-size: 7.5pt;
+        color: #666;
+      }
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
   <div class="page-shell report-shell" id="report-results">
+
+    <!-- Print-only header -->
+    <div class="print-header">
+      <div class="print-header-left">
+        <div class="print-company">{{ company.company_name|default:"BillMint" }}</div>
+        <div class="print-report-title">HSN Summary &middot; {{ period_label }}</div>
+      </div>
+      <div class="print-header-right">
+        GSTIN: {{ company.gstin|default:"—" }}<br>
+        <span id="print-date"></span><br>
+        Printed from BillMint
+      </div>
+    </div>
+
+    <!-- Screen header -->
     <div class="page-header report-header">
       <div>
         <div class="eyebrow">GST</div>
@@ -28,6 +145,7 @@
       </div>
     </form>
 
+    <!-- HSN summary table -->
     <section class="card">
       <div class="card-header"><div><div class="card-kicker">HSN</div><h2 class="card-title">HSN code summary</h2></div></div>
       <div class="table-wrap">
@@ -64,8 +182,63 @@
               <tr><td colspan="10" class="table-empty">No HSN summary available.</td></tr>
             {% endfor %}
           </tbody>
+          <tfoot id="hsn-tfoot" style="display:none;">
+            <tr>
+              <td colspan="3"><strong>Total</strong></td>
+              <td></td>
+              <td class="align-right" id="hsn-total-taxable"></td>
+              <td></td>
+              <td class="align-right" id="hsn-total-cgst"></td>
+              <td class="align-right" id="hsn-total-sgst"></td>
+              <td class="align-right" id="hsn-total-igst"></td>
+              <td class="align-right" id="hsn-total-tax"></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </section>
+
+    <!-- Print footer -->
+    <div class="print-footer">
+      <span>{{ company.company_name|default:"BillMint" }} &middot; HSN Summary &middot; {{ period_label }}</span>
+      <span id="print-footer-date"></span>
+    </div>
+
   </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Inject print date
+      const d = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      document.querySelectorAll('#print-date, #print-footer-date').forEach(el => el.textContent = d);
+
+      // Compute column totals from table rows and populate tfoot
+      const rows = document.querySelectorAll('.report-table tbody tr');
+      if (rows.length) {
+        // col indices (0-based): taxable=4, cgst=6, sgst=7, igst=8, tax=9
+        const colMap = { taxable: 4, cgst: 6, sgst: 7, igst: 8, tax: 9 };
+        const totals = { taxable: 0, cgst: 0, sgst: 0, igst: 0, tax: 0 };
+
+        rows.forEach(row => {
+          const cells = row.querySelectorAll('td');
+          if (cells.length < 10) return;
+          Object.entries(colMap).forEach(([key, idx]) => {
+            const raw = cells[idx].textContent.replace(/[₹,\s]/g, '');
+            const val = parseFloat(raw);
+            if (!isNaN(val)) totals[key] += val;
+          });
+        });
+
+        const fmt = v => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(v);
+        document.getElementById('hsn-total-taxable').textContent = fmt(totals.taxable);
+        document.getElementById('hsn-total-cgst').textContent    = fmt(totals.cgst);
+        document.getElementById('hsn-total-sgst').textContent    = fmt(totals.sgst);
+        document.getElementById('hsn-total-igst').textContent    = fmt(totals.igst);
+        document.getElementById('hsn-total-tax').textContent     = fmt(totals.tax);
+        document.getElementById('hsn-tfoot').style.display = '';
+      }
+    });
+  </script>
 {% endblock %}

@@ -46,11 +46,11 @@
         display: flex !important;
         justify-content: space-between;
         align-items: flex-end;
-        border-bottom: 2.5px solid #1a3a5c;
+        border-bottom: 2.5px solid #0a0a0a;
         padding-bottom: 8px;
         margin-bottom: 14px;
       }
-      .print-header-left .print-company { font-size: 13pt; font-weight: 700; color: #1a3a5c; }
+      .print-header-left .print-company { font-size: 13pt; font-weight: 700; color: #0a0a0a; }
       .print-header-left .print-report-title { font-size: 10pt; font-weight: 600; margin-top: 2px; }
       .print-header-right { text-align: right; font-size: 8pt; color: #555; line-height: 1.6; }
 
@@ -71,7 +71,7 @@
         print-color-adjust: exact;
       }
       .stat-label { font-size: 7.5pt !important; color: #555 !important; text-transform: uppercase; letter-spacing: 0.03em; }
-      .stat-value { font-size: 12pt !important; font-weight: 700 !important; color: #1a3a5c !important; margin-top: 2px; }
+      .stat-value { font-size: 12pt !important; font-weight: 700 !important; color: #0a0a0a !important; margin-top: 2px; }
 
       /* ── Daily summary table (replaces chart) ── */
       .print-daily-table {
@@ -88,10 +88,10 @@
       .print-section-title {
         font-size: 9pt;
         font-weight: 700;
-        color: #1a3a5c;
+        color: #0a0a0a;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        border-bottom: 1px solid #1a3a5c;
+        border-bottom: 1px solid #0a0a0a;
         padding-bottom: 3px;
         margin-bottom: 6px;
       }
@@ -128,7 +128,7 @@
         font-size: 8pt !important;
       }
       .report-table thead tr {
-        background: #1a3a5c !important;
+        background: #0a0a0a !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
@@ -136,7 +136,7 @@
         color: #fff !important;
         font-weight: 600 !important;
         padding: 5px 8px !important;
-        border: 1px solid #1a3a5c !important;
+        border: 1px solid #0a0a0a !important;
         font-size: 7.5pt !important;
       }
       .report-table tbody td {
@@ -151,7 +151,7 @@
       }
       .report-table tfoot td {
         font-weight: 700;
-        border-top: 2px solid #1a3a5c !important;
+        border-top: 2px solid #0a0a0a !important;
         background: #eef2f7 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
@@ -355,8 +355,8 @@
       window.buildLineChart('salesDailyChart', {{ daily_labels|safe }}, [{
         label: 'Revenue',
         data: {{ daily_revenue|safe }},
-        borderColor: '#1a3a5c',
-        backgroundColor: 'rgba(26,58,92,0.15)',
+        borderColor: '#f5c842',
+        backgroundColor: 'rgba(245,200,66,0.15)',
         tension: 0.25,
         fill: true,
       }], {
@@ -368,7 +368,7 @@
           },
         },
       });
-      window.buildDoughnutChart('salesCustomerChart', {{ sales_customer_labels|safe }}, {{ sales_customer_values|safe }}, ['#1a3a5c', '#2d5986', '#c8832a', '#16a34a', '#2563eb']);
+      window.buildDoughnutChart('salesCustomerChart', {{ sales_customer_labels|safe }}, {{ sales_customer_values|safe }}, ['#0a0a0a', '#1f1f1f', '#f5c842', '#16a34a', '#2563eb']);
     });
   </script>
 {% endblock %}
