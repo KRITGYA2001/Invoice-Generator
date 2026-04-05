@@ -79,6 +79,11 @@ class LogoutView(View):
         messages.success(request, "You have been logged out")
         return redirect("accounts_ui:login")
 
+    def post(self, request: HttpRequest) -> HttpResponse:
+        logout(request)
+        messages.success(request, "You have been logged out")
+        return redirect("accounts_ui:login")
+
 
 class RegisterView(View):
     """Create a user account and sign them in for onboarding."""

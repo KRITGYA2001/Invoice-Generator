@@ -5,134 +5,287 @@
 {% block auth_subtitle %}Start invoicing in minutes — free forever{% endblock %}
 
 {% block auth_content %}
-<form method="POST"
-      x-data="{ password: '', confirm: '', strength: 0, showPwd: false, showConfirm: false,
-                 calcStrength(p) {
-                   let s = 0;
-                   if (p.length >= 8) s += 25;
-                   if (/[A-Z]/.test(p)) s += 25;
-                   if (/[0-9]/.test(p)) s += 25;
-                   if (/[^A-Za-z0-9]/.test(p)) s += 25;
-                   return s;
-                 },
-                 strengthClass(s) {
-                   if (s <= 25) return 's-weak';
-                   if (s <= 50) return 's-fair';
-                   if (s <= 75) return 's-good';
-                   return 's-strong';
-                 },
-                 strengthLabel(s) {
-                   if (s <= 25) return 'Weak';
-                   if (s <= 50) return 'Fair';
-                   if (s <= 75) return 'Good';
-                   return 'Strong';
-                 }
-               }"
-      novalidate>
-  {% csrf_token %}
+{# ── Alpine scope wraps form + modals so they share the same state ── #}
+<div x-data="{
+  modal: '',
+  password: '',
+  confirm: '',
+  strength: 0,
+  showPwd: false,
+  showConfirm: false,
+  calcStrength(p) {
+    let s = 0;
+    if (p.length >= 8) s += 25;
+    if (/[A-Z]/.test(p)) s += 25;
+    if (/[0-9]/.test(p)) s += 25;
+    if (/[^A-Za-z0-9]/.test(p)) s += 25;
+    return s;
+  },
+  strengthClass(s) {
+    if (s <= 25) return 's-weak';
+    if (s <= 50) return 's-fair';
+    if (s <= 75) return 's-good';
+    return 's-strong';
+  },
+  strengthLabel(s) {
+    if (s <= 25) return 'Weak';
+    if (s <= 50) return 'Fair';
+    if (s <= 75) return 'Good';
+    return 'Strong';
+  }
+}" @keydown.escape.window="modal = ''">
 
-  <!-- Name row -->
-  <div class="grid-2">
+  {# ══ Registration form ══ #}
+  <form method="POST" novalidate>
+    {% csrf_token %}
+
+    <!-- Name row -->
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label" for="id_first_name">First name</label>
+        <input id="id_first_name"
+               class="form-control {% if form_errors.first_name %}is-invalid{% endif %}"
+               type="text" name="first_name"
+               value="{{ form_data.first_name|default:'' }}"
+               placeholder="Rahul" required>
+        {% if form_errors.first_name %}<span class="form-error">{{ form_errors.first_name }}</span>{% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="id_last_name">Last name</label>
+        <input id="id_last_name"
+               class="form-control {% if form_errors.last_name %}is-invalid{% endif %}"
+               type="text" name="last_name"
+               value="{{ form_data.last_name|default:'' }}"
+               placeholder="Sharma" required>
+        {% if form_errors.last_name %}<span class="form-error">{{ form_errors.last_name }}</span>{% endif %}
+      </div>
+    </div>
+
+    <!-- Email -->
     <div class="form-group">
-      <label class="form-label" for="id_first_name">First name</label>
-      <input id="id_first_name"
-             class="form-control {% if form_errors.first_name %}is-invalid{% endif %}"
-             type="text" name="first_name"
-             value="{{ form_data.first_name|default:'' }}"
-             placeholder="Rahul" required>
-      {% if form_errors.first_name %}<span class="form-error">{{ form_errors.first_name }}</span>{% endif %}
+      <label class="form-label" for="id_email">Work email</label>
+      <input id="id_email"
+             class="form-control {% if form_errors.email %}is-invalid{% endif %}"
+             type="email" name="email"
+             value="{{ form_data.email|default:'' }}"
+             autocomplete="email"
+             placeholder="you@company.com" required>
+      {% if form_errors.email %}<span class="form-error">{{ form_errors.email }}</span>{% endif %}
     </div>
+
+    <!-- Password -->
     <div class="form-group">
-      <label class="form-label" for="id_last_name">Last name</label>
-      <input id="id_last_name"
-             class="form-control {% if form_errors.last_name %}is-invalid{% endif %}"
-             type="text" name="last_name"
-             value="{{ form_data.last_name|default:'' }}"
-             placeholder="Sharma" required>
-      {% if form_errors.last_name %}<span class="form-error">{{ form_errors.last_name }}</span>{% endif %}
+      <label class="form-label" for="id_password">Password</label>
+      <div class="password-field">
+        <input id="id_password"
+               class="form-control {% if form_errors.password %}is-invalid{% endif %}"
+               :type="showPwd ? 'text' : 'password'"
+               name="password"
+               x-model="password"
+               @input="strength = calcStrength(password)"
+               placeholder="Min. 8 characters" required>
+        <button type="button" class="password-toggle" @click="showPwd = !showPwd" aria-label="Show password">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="17" height="17">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178Z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="auth-strength-bar" x-show="password.length > 0">
+        <div :class="strengthClass(strength)" :style="{ width: strength + '%' }"></div>
+      </div>
+      <span class="auth-strength-label" x-show="password.length > 0" x-text="strengthLabel(strength)"></span>
+      {% if form_errors.password %}<span class="form-error">{{ form_errors.password }}</span>{% endif %}
     </div>
-  </div>
 
-  <!-- Email -->
-  <div class="form-group">
-    <label class="form-label" for="id_email">Work email</label>
-    <input id="id_email"
-           class="form-control {% if form_errors.email %}is-invalid{% endif %}"
-           type="email" name="email"
-           value="{{ form_data.email|default:'' }}"
-           autocomplete="email"
-           placeholder="you@company.com" required>
-    {% if form_errors.email %}<span class="form-error">{{ form_errors.email }}</span>{% endif %}
-  </div>
-
-  <!-- Password -->
-  <div class="form-group">
-    <label class="form-label" for="id_password">Password</label>
-    <div class="password-field">
-      <input id="id_password"
-             class="form-control {% if form_errors.password %}is-invalid{% endif %}"
-             :type="showPwd ? 'text' : 'password'"
-             name="password"
-             x-model="password"
-             @input="strength = calcStrength(password)"
-             placeholder="Min. 8 characters" required>
-      <button type="button" class="password-toggle" @click="showPwd = !showPwd" aria-label="Show password">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="17" height="17">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178Z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-        </svg>
-      </button>
+    <!-- Confirm password -->
+    <div class="form-group">
+      <label class="form-label" for="id_confirm_password">Confirm password</label>
+      <div class="password-field">
+        <input id="id_confirm_password"
+               class="form-control {% if form_errors.confirm_password %}is-invalid{% endif %}"
+               :type="showConfirm ? 'text' : 'password'"
+               name="confirm_password"
+               x-model="confirm"
+               :class="{ 'is-valid': password && confirm === password, 'is-invalid': confirm && confirm !== password }"
+               placeholder="Re-enter password" required>
+        <button type="button" class="password-toggle" @click="showConfirm = !showConfirm" aria-label="Show password">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="17" height="17">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178Z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+          </svg>
+        </button>
+      </div>
+      <template x-if="confirm && confirm === password">
+        <span class="auth-valid-msg">&#10003; Passwords match</span>
+      </template>
+      {% if form_errors.confirm_password %}<span class="form-error">{{ form_errors.confirm_password }}</span>{% endif %}
     </div>
-    <!-- Strength bar -->
-    <div class="auth-strength-bar" x-show="password.length > 0">
-      <div :class="strengthClass(strength)" :style="{ width: strength + '%' }"></div>
+
+    <!-- Terms — links open the modals -->
+    <div class="auth-check-row">
+      <input id="id_terms" type="checkbox" name="terms" {% if form_data.terms %}checked{% endif %} required>
+      <label for="id_terms">
+        I agree to the
+        <a href="#" class="auth-link" @click.prevent="modal = 'tos'">Terms of Service</a>
+        and
+        <a href="#" class="auth-link" @click.prevent="modal = 'pp'">Privacy Policy</a>
+      </label>
     </div>
-    <span class="auth-strength-label" x-show="password.length > 0" x-text="strengthLabel(strength)"></span>
-    {% if form_errors.password %}<span class="form-error">{{ form_errors.password }}</span>{% endif %}
-  </div>
+    {% if form_errors.terms %}<span class="form-error" style="margin-top:-14px;margin-bottom:14px;display:block;">{{ form_errors.terms }}</span>{% endif %}
 
-  <!-- Confirm password -->
-  <div class="form-group">
-    <label class="form-label" for="id_confirm_password">Confirm password</label>
-    <div class="password-field">
-      <input id="id_confirm_password"
-             class="form-control {% if form_errors.confirm_password %}is-invalid{% endif %}"
-             :type="showConfirm ? 'text' : 'password'"
-             name="confirm_password"
-             x-model="confirm"
-             :class="{ 'is-valid': password && confirm === password, 'is-invalid': confirm && confirm !== password }"
-             placeholder="Re-enter password" required>
-      <button type="button" class="password-toggle" @click="showConfirm = !showConfirm" aria-label="Show password">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="17" height="17">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178Z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-        </svg>
-      </button>
-    </div>
-    <template x-if="confirm && confirm === password">
-      <span class="auth-valid-msg">✓ Passwords match</span>
-    </template>
-    {% if form_errors.confirm_password %}<span class="form-error">{{ form_errors.confirm_password }}</span>{% endif %}
-  </div>
+    <!-- Submit -->
+    <button class="auth-btn-primary auth-btn-yellow" type="submit">
+      Create Account &rarr;
+    </button>
+  </form>
 
-  <!-- Terms -->
-  <div class="auth-check-row">
-    <input id="id_terms" type="checkbox" name="terms" {% if form_data.terms %}checked{% endif %} required>
-    <label for="id_terms">
-      I agree to the <a href="#" class="auth-link">Terms of Service</a> and <a href="#" class="auth-link">Privacy Policy</a>
-    </label>
-  </div>
-  {% if form_errors.terms %}<span class="form-error" style="margin-top:-14px;margin-bottom:14px;display:block;">{{ form_errors.terms }}</span>{% endif %}
+  <p class="auth-switch">
+    Already have an account?
+    <a href="{% url 'accounts_ui:login' %}" class="auth-link">Sign in</a>
+  </p>
 
-  <!-- Submit -->
-  <button class="auth-btn-primary auth-btn-yellow" type="submit">
-    Create Account →
-  </button>
 
-</form>
+  <!-- Modal overlay — content switches on Alpine `modal` value -->
+  <div x-show="modal !== ''"
+       x-transition:enter="auth-overlay-in"
+       x-transition:enter-start="auth-overlay-from"
+       x-transition:enter-end="auth-overlay-to"
+       x-transition:leave="auth-overlay-in"
+       x-transition:leave-start="auth-overlay-to"
+       x-transition:leave-end="auth-overlay-from"
+       class="auth-modal-overlay"
+       @click.self="modal = ''"
+       style="display:none;">
 
-<p class="auth-switch">
-  Already have an account?
-  <a href="{% url 'accounts_ui:login' %}" class="auth-link">Sign in</a>
-</p>
+    <!-- ── Terms of Service ── -->
+    <div x-show="modal === 'tos'" x-transition class="auth-modal-box">
+      <div class="auth-modal-header">
+        <h3 class="auth-modal-title">Terms of Service</h3>
+        <button type="button" class="auth-modal-close" @click="modal = ''" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="auth-modal-body">
+        <p class="auth-modal-updated">Last updated: 1 April 2026</p>
+
+        <h4>1. Acceptance of Terms</h4>
+        <p>By creating an account on BillMint, you agree to be bound by these Terms of Service. If you do not agree, please do not use our service. These terms apply to all users — individuals, businesses, and organisations — accessing BillMint.</p>
+
+        <h4>2. Use of the Service</h4>
+        <p>BillMint is a GST-compliant invoicing and business management platform designed for Indian businesses. You may use the service to:</p>
+        <ul>
+          <li>Create and send GST invoices, credit notes, and quotations</li>
+          <li>Manage products, customers, and inventory</li>
+          <li>Generate financial and GST reports</li>
+          <li>Track payments and outstanding balances</li>
+        </ul>
+        <p>You must not use BillMint for any unlawful purpose, to generate fraudulent invoices, or to misrepresent your business identity or GST registration.</p>
+
+        <h4>3. Account Responsibilities</h4>
+        <p>You are responsible for maintaining the confidentiality of your account credentials. You agree to notify us immediately at <strong>contact@ashvventures.com</strong> if you suspect any unauthorised access to your account. BillMint is not liable for losses resulting from unauthorised use of your credentials.</p>
+
+        <h4>4. Data Ownership</h4>
+        <p>All business data you enter — customers, products, invoices, and reports — belongs to you. BillMint does not claim ownership of your data. You may export your data at any time from the Settings section of your account.</p>
+
+        <h4>5. GST Compliance</h4>
+        <p>BillMint generates invoice formats consistent with Indian GST law. However, you remain solely responsible for the accuracy of GST rates, HSN/SAC codes, GSTIN details, and filing obligations. BillMint does not provide tax advisory services.</p>
+
+        <h4>6. Service Availability</h4>
+        <p>We aim to maintain 99.5% uptime but do not guarantee uninterrupted service. Scheduled maintenance will be communicated in advance. BillMint shall not be liable for losses arising from temporary unavailability.</p>
+
+        <h4>7. Limitation of Liability</h4>
+        <p>To the maximum extent permitted by law, BillMint's liability for any claim arising out of or related to these terms shall not exceed the amount paid by you in the three months preceding the event giving rise to the claim.</p>
+
+        <h4>8. Modifications</h4>
+        <p>We may update these Terms from time to time. Continued use of BillMint after changes are posted constitutes acceptance of the revised Terms. We will notify you of material changes via email.</p>
+
+        <h4>9. Governing Law</h4>
+        <p>These Terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in New Delhi, India.</p>
+
+        <h4>10. Contact</h4>
+        <p>For questions about these Terms, contact us at <strong>contact@ashvventures.com</strong>.</p>
+      </div>
+      <div class="auth-modal-footer">
+        <button type="button" class="auth-btn-primary" style="width:auto;padding:0 28px;height:44px;" @click="modal = ''">
+          Got it
+        </button>
+      </div>
+    </div><!-- /tos -->
+
+    <!-- ── Privacy Policy ── -->
+    <div x-show="modal === 'pp'" x-transition class="auth-modal-box">
+      <div class="auth-modal-header">
+        <h3 class="auth-modal-title">Privacy Policy</h3>
+        <button type="button" class="auth-modal-close" @click="modal = ''" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="auth-modal-body">
+        <p class="auth-modal-updated">Last updated: 1 April 2026</p>
+
+        <h4>1. Information We Collect</h4>
+        <p>When you use BillMint, we collect the following information:</p>
+        <ul>
+          <li><strong>Account data</strong> — name, email address, and password (stored as a salted hash)</li>
+          <li><strong>Business data</strong> — company name, GSTIN, PAN, address, and bank details you provide</li>
+          <li><strong>Transaction data</strong> — invoices, customers, products, and payments you create</li>
+          <li><strong>Usage data</strong> — pages visited, features used, and browser/device information (anonymised)</li>
+        </ul>
+
+        <h4>2. How We Use Your Information</h4>
+        <p>Your data is used exclusively to:</p>
+        <ul>
+          <li>Provide and operate the BillMint service</li>
+          <li>Generate GST-compliant invoices and reports on your behalf</li>
+          <li>Send transactional emails (account verification, password reset)</li>
+          <li>Improve the product through aggregated, anonymised analytics</li>
+        </ul>
+        <p>We <strong>never</strong> sell, rent, or share your personal or business data with third parties for marketing purposes.</p>
+
+        <h4>3. Data Security</h4>
+        <p>BillMint uses industry-standard security measures including:</p>
+        <ul>
+          <li>HTTPS encryption for all data in transit</li>
+          <li>Bcrypt hashing for all stored passwords</li>
+          <li>Regular automated backups with encryption at rest</li>
+          <li>Role-based access controls for our internal team</li>
+        </ul>
+
+        <h4>4. Data Retention</h4>
+        <p>Your data is retained for as long as your account is active. If you close your account, we will delete your personal information within 30 days, except where retention is required by law (e.g., GST records required to be maintained for 6 years under Indian law).</p>
+
+        <h4>5. Your Rights</h4>
+        <p>You have the right to:</p>
+        <ul>
+          <li>Access and export all your data at any time</li>
+          <li>Correct inaccurate information via your account settings</li>
+          <li>Request deletion of your account and associated data</li>
+          <li>Object to processing of your data by contacting us</li>
+        </ul>
+
+        <h4>6. Cookies</h4>
+        <p>BillMint uses only essential session cookies required to keep you logged in. We do not use advertising or tracking cookies.</p>
+
+        <h4>7. Third-Party Services</h4>
+        <p>BillMint may use the following trusted third-party services:</p>
+        <ul>
+          <li><strong>Cloud hosting</strong> — for infrastructure (data stored in India)</li>
+          <li><strong>Transactional email</strong> — to send system notifications</li>
+        </ul>
+        <p>These providers are bound by data processing agreements and are not permitted to use your data for their own purposes.</p>
+
+        <h4>8. Contact Us</h4>
+        <p>For privacy-related questions or requests, contact us at <strong>contact@ashvventures.com</strong>.</p>
+      </div>
+      <div class="auth-modal-footer">
+        <button type="button" class="auth-btn-primary" style="width:auto;padding:0 28px;height:44px;" @click="modal = ''">
+          Got it
+        </button>
+      </div>
+    </div><!-- /pp -->
+
+  </div><!-- /auth-modal-overlay -->
+
+</div><!-- /x-data wrapper -->
 {% endblock %}

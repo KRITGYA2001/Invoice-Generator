@@ -7,7 +7,7 @@
   <title>{% block title %}Sign in{% endblock %} · BillMint</title>
   <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
   <link rel="stylesheet" href="{% static 'css/auth.css' %}">
   <script src="{% static 'js/vendor/alpine.min.js' %}" defer></script>
@@ -28,71 +28,83 @@
       </div>
 
       <!-- Headline -->
-      <h2 class="auth-headline">
-        Invoicing built<br>for <span>India</span>.
-      </h2>
-
-      <p class="auth-tagline">
-        GST-compliant invoices, inventory management, and financial reports — everything your business needs, in one place.
-      </p>
-
-      <!-- Features -->
-      <ul class="auth-feat-list">
-        <li>
-          <span class="auth-feat-check">
-            <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
-              <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          GST invoicing with HSN / SAC codes
-        </li>
-        <li>
-          <span class="auth-feat-check">
-            <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
-              <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          Live inventory &amp; low-stock alerts
-        </li>
-        <li>
-          <span class="auth-feat-check">
-            <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
-              <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          Customer, product &amp; category reports
-        </li>
-        <li>
-          <span class="auth-feat-check">
-            <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
-              <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          PDF export &amp; email delivery
-        </li>
-      </ul>
-
-      <!-- Stat pills -->
-      <div class="auth-stats">
-        <div class="auth-stat-pill">
-          <div class="auth-stat-pill-dot"></div>
-          <span class="auth-stat-pill-text">10,000+ Invoices generated</span>
-        </div>
-        <div class="auth-stat-pill">
-          <div class="auth-stat-pill-dot"></div>
-          <span class="auth-stat-pill-text">₹2 Cr+ Revenue tracked</span>
-        </div>
+      <div class="auth-brand-copy">
+        <h2 class="auth-headline">
+          Invoicing built<br>for <span>India</span>.
+        </h2>
+        <p class="auth-tagline">
+          GST-compliant invoices, smart inventory and financial reports — everything your business needs in one place.
+        </p>
       </div>
+
+      <!-- 3-D Invoice Scene -->
+      <div class="auth-3d-wrap">
+        <div class="auth-card-layers">
+          <!-- Depth/shadow cards -->
+          <div class="auth-ghost-card auth-ghost-2"></div>
+          <div class="auth-ghost-card auth-ghost-1"></div>
+
+          <!-- Main invoice card -->
+          <div class="auth-inv-card">
+
+            <!-- Header row: brand mark · invoice number · paid status -->
+            <div class="auth-inv-top">
+              <div class="auth-inv-brandmark">BM</div>
+              <div class="auth-inv-meta">
+                <div class="auth-inv-doc-label">Invoice</div>
+                <div class="auth-inv-number">INV-2026-0042</div>
+              </div>
+              <div class="auth-inv-status">&#10003; Paid</div>
+            </div>
+
+            <div class="auth-inv-rule"></div>
+
+            <!-- Customer + amount -->
+            <div class="auth-inv-billed">Billed to</div>
+            <div class="auth-inv-customer">Sharma Enterprises Pvt. Ltd.</div>
+            <div class="auth-inv-amount">₹ 84,500</div>
+            <div class="auth-inv-gst-note">incl. 18% GST &nbsp;·&nbsp; Due 15 Apr 2026</div>
+
+            <!-- Mini revenue bar chart -->
+            <div class="auth-inv-bars">
+              <div class="auth-inv-bar" style="--bh:42%"></div>
+              <div class="auth-inv-bar" style="--bh:67%"></div>
+              <div class="auth-inv-bar" style="--bh:53%"></div>
+              <div class="auth-inv-bar auth-inv-bar-hi" style="--bh:100%"></div>
+              <div class="auth-inv-bar" style="--bh:78%"></div>
+              <div class="auth-inv-bar" style="--bh:88%"></div>
+            </div>
+
+          </div><!-- /auth-inv-card -->
+        </div><!-- /auth-card-layers -->
+
+        <!-- Floating badges -->
+        <div class="auth-float-pill auth-pill-gst">
+          <span class="auth-pill-dot"></span>
+          GST Compliant
+        </div>
+        <div class="auth-float-pill auth-pill-pdf">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          Instant PDF
+        </div>
+        <div class="auth-float-circle">₹</div>
+
+      </div><!-- /auth-3d-wrap -->
 
     </div>
 
-    <div class="auth-brand-foot">© 2026 BillMint</div>
+    <div class="auth-brand-foot">© 2026 BillMint · Built for India</div>
   </div>
 
   <!-- ══════════════════════════════════════════
        RIGHT — WHITE FORM PANEL
        ══════════════════════════════════════════ -->
   <div class="auth-form-panel">
+    {% block auth_topbar %}{% endblock %}
     <div class="auth-form-inner">
 
       <div class="auth-form-head">
