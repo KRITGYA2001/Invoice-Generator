@@ -1,6 +1,10 @@
 {% extends "base/base.html" %}
-{% load ui_tags invoice_filters %}
+{% load ui_tags invoice_filters static %}
 {% block title %}{% if is_edit %}Edit Invoice{% else %}New Invoice{% endif %}{% endblock %}
+
+{% block extra_head %}
+<script src="{% static 'js/india-data.js' %}"></script>
+{% endblock %}
 
 {% block content %}
 <form method="POST" id="invoice-form" x-data="invoiceApp()" x-init="init()">
@@ -37,18 +41,48 @@
         </div>
 
         <div class="grid-3" style="margin-top:12px">
+          <!-- Place of Supply combobox -->
           <div class="form-group">
             <label class="form-label required">Place of Supply</label>
-            <input name="place_of_supply" class="form-control"
-                   value="{{ invoice.place_of_supply|default:company.state }}"
-                   required x-model="placeOfSupply" @change="updateInterstate()">
+            <div class="si-wrap" @click.outside="posOpen = false">
+              <input name="place_of_supply" class="form-control" autocomplete="off"
+                     x-model="placeOfSupply" required
+                     placeholder="Search state…"
+                     @focus="posOpen = true" @input="posOpen = true; updateInterstate()">
+              <span class="si-chevron">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+              <div class="si-dropdown" x-show="posOpen && posFiltered.length" style="display:none;">
+                <template x-for="s in posFiltered" :key="s.code">
+                  <div class="si-option" @mousedown.prevent="pickPlaceOfSupply(s)">
+                    <span class="si-badge" x-text="s.code"></span>
+                    <span class="si-option-text" x-text="s.name"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
           </div>
 
+          <!-- Place of Supply Code combobox -->
           <div class="form-group">
             <label class="form-label required">State Code</label>
-            <input name="place_of_supply_code" class="form-control"
-                   value="{{ invoice.place_of_supply_code|default:company.state_code }}"
-                   maxlength="2" x-model="placeOfSupplyCode" @change="updateInterstate()">
+            <div class="si-wrap" @click.outside="posCodeOpen = false">
+              <input name="place_of_supply_code" class="form-control" autocomplete="off"
+                     x-model="placeOfSupplyCode" maxlength="2"
+                     placeholder="e.g. 07"
+                     @focus="posCodeOpen = true" @input="posCodeOpen = true; updateInterstate()">
+              <span class="si-chevron">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+              <div class="si-dropdown" x-show="posCodeOpen && posCodeFiltered.length" style="display:none;">
+                <template x-for="s in posCodeFiltered" :key="s.code">
+                  <div class="si-option" @mousedown.prevent="pickPosCode(s)">
+                    <span class="si-badge" x-text="s.code"></span>
+                    <span class="si-option-text" x-text="s.name"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
           </div>
 
           <div class="form-group">
@@ -101,14 +135,50 @@
             </div>
           </div>
           <div class="grid-3" style="margin-top:10px">
+            <!-- Customer State combobox -->
             <div class="form-group">
               <label class="form-label">State</label>
-              <input name="customer_state" class="form-control" value="{{ invoice.customer_state|default:'' }}" x-ref="manualState">
+              <div class="si-wrap" @click.outside="custStateOpen = false">
+                <input name="customer_state" class="form-control" autocomplete="off"
+                       x-model="customerStateName"
+                       placeholder="Search state…"
+                       @focus="custStateOpen = true" @input="custStateOpen = true">
+                <span class="si-chevron">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
+                <div class="si-dropdown" x-show="custStateOpen && custStateFiltered.length" style="display:none;">
+                  <template x-for="s in custStateFiltered" :key="s.code">
+                    <div class="si-option" @mousedown.prevent="pickCustState(s)">
+                      <span class="si-badge" x-text="s.code"></span>
+                      <span class="si-option-text" x-text="s.name"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
             </div>
+
+            <!-- Customer State Code combobox -->
             <div class="form-group">
               <label class="form-label">State Code</label>
-              <input name="customer_state_code" class="form-control" value="{{ invoice.customer_state_code|default:'' }}" maxlength="2" x-model="customerStateCode" @change="updateInterstate()">
+              <div class="si-wrap" @click.outside="custCodeOpen = false">
+                <input name="customer_state_code" class="form-control" autocomplete="off"
+                       x-model="customerStateCode" maxlength="2"
+                       placeholder="e.g. 07"
+                       @focus="custCodeOpen = true" @input="custCodeOpen = true; updateInterstate()">
+                <span class="si-chevron">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
+                <div class="si-dropdown" x-show="custCodeOpen && custCodeFiltered.length" style="display:none;">
+                  <template x-for="s in custCodeFiltered" :key="s.code">
+                    <div class="si-option" @mousedown.prevent="pickCustCode(s)">
+                      <span class="si-badge" x-text="s.code"></span>
+                      <span class="si-option-text" x-text="s.name"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
             </div>
+
             <div class="form-group">
               <label class="form-label">Mobile</label>
               <input name="customer_mobile" class="form-control" value="{{ invoice.customer_mobile|default:'' }}" type="tel">
@@ -373,6 +443,36 @@ function invoiceApp() {
     customerStateCode: '{{ invoice.customer_state_code|default:'' }}',
     customerStateName: '{{ invoice.customer_state|default:''|escapejs }}',
     customerGSTIN: '{{ invoice.customer_gstin|default:'' }}',
+
+    /* ── Combobox open flags ── */
+    posOpen: false, posCodeOpen: false,
+    custStateOpen: false, custCodeOpen: false,
+
+    /* ── Place of Supply filtered lists ── */
+    get posFiltered() {
+      const q = (this.placeOfSupply || '').toLowerCase().trim();
+      return (q ? INDIA_STATES.filter(s => s.name.toLowerCase().includes(q)) : INDIA_STATES).slice(0, 12);
+    },
+    get posCodeFiltered() {
+      const q = (this.placeOfSupplyCode || '').trim();
+      return (q ? INDIA_STATES.filter(s => s.code.startsWith(q) || s.name.toLowerCase().includes(q.toLowerCase())) : INDIA_STATES).slice(0, 12);
+    },
+
+    /* ── Customer (manual) state filtered lists ── */
+    get custStateFiltered() {
+      const q = (this.customerStateName || '').toLowerCase().trim();
+      return (q ? INDIA_STATES.filter(s => s.name.toLowerCase().includes(q)) : INDIA_STATES).slice(0, 12);
+    },
+    get custCodeFiltered() {
+      const q = (this.customerStateCode || '').trim();
+      return (q ? INDIA_STATES.filter(s => s.code.startsWith(q) || s.name.toLowerCase().includes(q.toLowerCase())) : INDIA_STATES).slice(0, 12);
+    },
+
+    /* ── Pick handlers ── */
+    pickPlaceOfSupply(s) { this.placeOfSupply = s.name; this.placeOfSupplyCode = s.code; this.posOpen = false; this.posCodeOpen = false; this.updateInterstate(); },
+    pickPosCode(s)       { this.placeOfSupply = s.name; this.placeOfSupplyCode = s.code; this.posCodeOpen = false; this.posOpen = false; this.updateInterstate(); },
+    pickCustState(s)     { this.customerStateName = s.name; this.customerStateCode = s.code; this.custStateOpen = false; this.custCodeOpen = false; this.updateInterstate(); },
+    pickCustCode(s)      { this.customerStateName = s.name; this.customerStateCode = s.code; this.custCodeOpen = false; this.custStateOpen = false; this.updateInterstate(); },
     amountInWords: '',
     totals: {
       subtotal: 0,
@@ -522,7 +622,10 @@ function invoiceApp() {
 
     extractCustomerState() {
       if (this.customerGSTIN && this.customerGSTIN.length >= 2) {
-        this.customerStateCode = this.customerGSTIN.slice(0, 2);
+        const code  = this.customerGSTIN.slice(0, 2);
+        const state = INDIA_STATES.find(s => s.code === code);
+        this.customerStateCode = code;
+        if (state) this.customerStateName = state.name;
         this.updateInterstate();
       }
     },

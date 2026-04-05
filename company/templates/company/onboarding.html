@@ -28,6 +28,8 @@
 {% endblock %}
 
 {% block extra_head %}
+{% load static %}
+<script src="{% static 'js/india-data.js' %}"></script>
 <style>
   .auth-form-inner { max-width: 580px; }
 </style>
@@ -52,7 +54,15 @@
      STEP 1 — Company details
      ══════════════════════════════════════════ -->
 {% if current_step == 1 %}
-<form method="POST" x-data="{ gstin: '{{ company.gstin|default:'' }}' }">
+<form method="POST"
+      x-data="indiaForm({
+        gstin:   '{{ company.gstin|default:'' }}',
+        state:   '{{ company.state|default:'' }}',
+        code:    '{{ company.state_code|default:'' }}',
+        city:    '{{ company.city|default:'' }}',
+        country: '{{ company.country|default:'India' }}'
+      })"
+      @click.away.window="stateOpen=false; codeOpen=false; cityOpen=false; countryOpen=false;">
   {% csrf_token %}
   <input type="hidden" name="step" value="1">
 
@@ -87,10 +97,10 @@
     <div class="form-group">
       <label class="form-label" for="id_gstin">GSTIN</label>
       <input id="id_gstin" name="gstin" x-model="gstin"
-             @input="if(gstin.length===15){ document.getElementById('id_state_code').value=gstin.slice(0,2); document.getElementById('id_pan').value=gstin.slice(2,12); }"
+             @input="onGstinChange()"
              class="form-control" placeholder="22AAAAA0000A1Z5"
              value="{{ company.gstin|default:'' }}">
-      <span class="form-hint">Auto-fills state code &amp; PAN</span>
+      <span class="form-hint">Auto-fills state &amp; PAN</span>
     </div>
     <div class="form-group">
       <label class="form-label" for="id_pan">PAN</label>
@@ -130,11 +140,26 @@
   </div>
 
   <div class="grid-2 mb-16">
+    <!-- City combobox -->
     <div class="form-group">
-      <label class="form-label" for="id_city">City</label>
-      <input id="id_city" name="city" class="form-control"
-             placeholder="New Delhi" value="{{ company.city|default:'' }}">
+      <label class="form-label">City</label>
+      <div class="si-wrap" @click.outside="cityOpen = false">
+        <input name="city" class="form-control" autocomplete="off"
+               x-model="cityVal" placeholder="Search city…"
+               @focus="cityOpen = true" @input="cityOpen = true">
+        <span class="si-chevron">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+        <div class="si-dropdown" x-show="cityOpen && cityFiltered.length" style="display:none;">
+          <template x-for="c in cityFiltered" :key="c">
+            <div class="si-option" @mousedown.prevent="pickCity(c)">
+              <span class="si-option-text" x-text="c"></span>
+            </div>
+          </template>
+        </div>
+      </div>
     </div>
+
     <div class="form-group">
       <label class="form-label" for="id_pincode">Pincode</label>
       <input id="id_pincode" name="pincode" class="form-control"
@@ -142,16 +167,67 @@
     </div>
   </div>
 
-  <div class="grid-2 mb-24">
+  <div class="grid-2 mb-16">
+    <!-- State combobox -->
     <div class="form-group">
-      <label class="form-label" for="id_state">State</label>
-      <input id="id_state" name="state" class="form-control"
-             placeholder="Delhi" value="{{ company.state|default:'' }}">
+      <label class="form-label">State</label>
+      <div class="si-wrap" @click.outside="stateOpen = false">
+        <input name="state" class="form-control" autocomplete="off"
+               x-model="stateVal" placeholder="Search state…"
+               @focus="stateOpen = true" @input="stateOpen = true">
+        <span class="si-chevron">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+        <div class="si-dropdown" x-show="stateOpen && stateFiltered.length" style="display:none;">
+          <template x-for="s in stateFiltered" :key="s.code">
+            <div class="si-option" @mousedown.prevent="pickState(s)">
+              <span class="si-badge" x-text="s.code"></span>
+              <span class="si-option-text" x-text="s.name"></span>
+            </div>
+          </template>
+        </div>
+      </div>
     </div>
+
+    <!-- State Code combobox -->
     <div class="form-group">
-      <label class="form-label" for="id_state_code">State Code</label>
-      <input id="id_state_code" name="state_code" class="form-control"
-             placeholder="07" value="{{ company.state_code|default:'' }}">
+      <label class="form-label">State Code</label>
+      <div class="si-wrap" @click.outside="codeOpen = false">
+        <input id="id_state_code" name="state_code" class="form-control" autocomplete="off"
+               x-model="codeVal" placeholder="e.g. 07"
+               @focus="codeOpen = true" @input="codeOpen = true">
+        <span class="si-chevron">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+        <div class="si-dropdown" x-show="codeOpen && codeFiltered.length" style="display:none;">
+          <template x-for="s in codeFiltered" :key="s.code">
+            <div class="si-option" @mousedown.prevent="pickCode(s)">
+              <span class="si-badge" x-text="s.code"></span>
+              <span class="si-option-text" x-text="s.name"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Country combobox -->
+  <div class="form-group mb-24">
+    <label class="form-label">Country</label>
+    <div class="si-wrap" @click.outside="countryOpen = false">
+      <input name="country" class="form-control" autocomplete="off"
+             x-model="countryVal" placeholder="Search country…"
+             @focus="countryOpen = true" @input="countryOpen = true">
+      <span class="si-chevron">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+      <div class="si-dropdown" x-show="countryOpen && countryFiltered.length" style="display:none;">
+        <template x-for="c in countryFiltered" :key="c">
+          <div class="si-option" @mousedown.prevent="pickCountry(c)">
+            <span class="si-option-text" x-text="c"></span>
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 

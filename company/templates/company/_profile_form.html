@@ -1,15 +1,45 @@
-<form method="POST" action="{% url 'company_ui:profile' %}?tab=profile" enctype="multipart/form-data" x-data="{ gstin: '{{ company.gstin|default:'' }}', logoPreview: null, signPreview: null }">
+{% load static %}
+<script src="{% static 'js/india-data.js' %}"></script>
+
+<form method="POST" action="{% url 'company_ui:profile' %}?tab=profile"
+      enctype="multipart/form-data"
+      x-data="indiaForm({
+        gstin:   '{{ company.gstin|default:'' }}',
+        state:   '{{ company.state|default:'' }}',
+        code:    '{{ company.state_code|default:'' }}',
+        city:    '{{ company.city|default:'' }}',
+        country: '{{ company.country|default:'India' }}'
+      })"
+      @click.away.window="stateOpen=false; codeOpen=false; cityOpen=false; countryOpen=false;">
   {% csrf_token %}
 
   <div class="settings-grid">
+
+    <!-- ── Business Identity ── -->
     <div class="card section-gap">
       <div class="card-header"><h3 class="card-title">Business Identity</h3></div>
-      <div class="form-group mb-16"><label class="form-label required">Company Name</label><input name="company_name" class="form-control" value="{{ company.company_name }}" required></div>
-      <div class="grid-2 mb-16">
-        <div class="form-group"><label class="form-label">Trade Name</label><input name="trade_name" class="form-control" value="{{ company.trade_name|default:'' }}"></div>
-        <div class="form-group"><label class="form-label">Logo Text</label><input name="logo_text" class="form-control" maxlength="6" value="{{ company.logo_text|default:'' }}"><span class="form-hint">Short code shown when no logo e.g. SSI</span></div>
+
+      <div class="form-group mb-16">
+        <label class="form-label required">Company Name</label>
+        <input name="company_name" class="form-control" value="{{ company.company_name }}" required>
       </div>
-      <div class="form-group mb-16"><label class="form-label">Unit Division</label><input name="unit_division" class="form-control" value="{{ company.unit_division|default:'' }}"></div>
+
+      <div class="grid-2 mb-16">
+        <div class="form-group">
+          <label class="form-label">Trade Name</label>
+          <input name="trade_name" class="form-control" value="{{ company.trade_name|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Logo Text</label>
+          <input name="logo_text" class="form-control" maxlength="6" value="{{ company.logo_text|default:'' }}">
+          <span class="form-hint">Short code shown when no logo e.g. SSI</span>
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Unit Division</label>
+        <input name="unit_division" class="form-control" value="{{ company.unit_division|default:'' }}">
+      </div>
 
       <div x-data="{ preview: null }" class="mb-16">
         <div class="logo-preview">
@@ -21,48 +51,183 @@
           <img x-show="preview" :src="preview" class="logo-preview-img" alt="Logo preview">
         </div>
         <label class="file-upload-btn" for="id_logo">Upload Logo</label>
-        <input id="id_logo" name="logo" type="file" accept="image/*" @change="preview = URL.createObjectURL($event.target.files[0])">
+        <input id="id_logo" name="logo" type="file" accept="image/*"
+               @change="preview = URL.createObjectURL($event.target.files[0])">
       </div>
     </div>
 
+    <!-- ── Registration & Tax ── -->
     <div class="card section-gap">
-      <div class="card-header"><h3 class="card-title">Registration & Tax</h3></div>
+      <div class="card-header"><h3 class="card-title">Registration &amp; Tax</h3></div>
       <div class="grid-2 mb-16">
-        <div class="form-group"><label class="form-label">GSTIN</label><input name="gstin" x-model="gstin" @input="if(gstin.length===15){ document.getElementById('id_state_code').value=gstin.slice(0,2); document.getElementById('id_pan').value=gstin.slice(2,12);}" class="form-control" value="{{ company.gstin|default:'' }}"><span class="form-hint">15-character GST registration number</span></div>
-        <div class="form-group"><label class="form-label">PAN</label><input id="id_pan" name="pan" class="form-control" value="{{ company.pan|default:'' }}"></div>
+        <div class="form-group">
+          <label class="form-label">GSTIN</label>
+          <input name="gstin" x-model="gstin" @input="onGstinChange()"
+                 class="form-control" placeholder="22AAAAA0000A1Z5"
+                 value="{{ company.gstin|default:'' }}">
+          <span class="form-hint">Auto-fills state &amp; PAN</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">PAN</label>
+          <input id="id_pan" name="pan" class="form-control" value="{{ company.pan|default:'' }}">
+        </div>
       </div>
-      <div class="form-group mb-16"><label class="form-label">UDYAM Number</label><input name="udyam_number" class="form-control" value="{{ company.udyam_number|default:'' }}"></div>
-      <div class="flex-center gap-8"><input type="checkbox" id="id_is_msme" name="is_msme" {% if company.is_msme %}checked{% endif %}><label for="id_is_msme" class="text-sm">MSME Registered</label></div>
+      <div class="form-group mb-16">
+        <label class="form-label">UDYAM Number</label>
+        <input name="udyam_number" class="form-control" value="{{ company.udyam_number|default:'' }}">
+      </div>
+      <div class="flex-center gap-8">
+        <input type="checkbox" id="id_is_msme" name="is_msme" {% if company.is_msme %}checked{% endif %}>
+        <label for="id_is_msme" class="text-sm">MSME Registered</label>
+      </div>
     </div>
 
+    <!-- ── Registered Address ── -->
     <div class="card section-gap">
       <div class="card-header"><h3 class="card-title">Registered Address</h3></div>
-      <div class="form-group mb-16"><label class="form-label">Address Line 1</label><input name="address_line1" class="form-control" value="{{ company.address_line1|default:'' }}"></div>
-      <div class="form-group mb-16"><label class="form-label">Address Line 2</label><input name="address_line2" class="form-control" value="{{ company.address_line2|default:'' }}"></div>
-      <div class="grid-2 mb-16">
-        <div class="form-group"><label class="form-label">City</label><input name="city" class="form-control" value="{{ company.city|default:'' }}"></div>
-        <div class="form-group"><label class="form-label">Pincode</label><input name="pincode" class="form-control" value="{{ company.pincode|default:'' }}"></div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Address Line 1</label>
+        <input name="address_line1" class="form-control" value="{{ company.address_line1|default:'' }}">
       </div>
-      <div class="grid-2 mb-16">
-        <div class="form-group"><label class="form-label">State</label><input name="state" class="form-control" value="{{ company.state|default:'' }}"></div>
-        <div class="form-group"><label class="form-label">State Code</label><input id="id_state_code" name="state_code" class="form-control" value="{{ company.state_code|default:'' }}"></div>
+      <div class="form-group mb-16">
+        <label class="form-label">Address Line 2</label>
+        <input name="address_line2" class="form-control" value="{{ company.address_line2|default:'' }}">
       </div>
-      <div class="form-group"><label class="form-label">Country</label><input name="country" class="form-control" value="{{ company.country|default:'India' }}"></div>
+
+      <div class="grid-2 mb-16">
+
+        <!-- City combobox -->
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <div class="si-wrap" @click.outside="cityOpen = false">
+            <input name="city" class="form-control" autocomplete="off"
+                   x-model="cityVal"
+                   placeholder="Search city…"
+                   @focus="cityOpen = true"
+                   @input="cityOpen = true">
+            <span class="si-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+            <div class="si-dropdown" x-show="cityOpen && cityFiltered.length" style="display:none;">
+              <template x-for="c in cityFiltered" :key="c">
+                <div class="si-option" @mousedown.prevent="pickCity(c)">
+                  <span class="si-option-text" x-text="c"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Pincode</label>
+          <input name="pincode" class="form-control" placeholder="110001"
+                 value="{{ company.pincode|default:'' }}">
+        </div>
+      </div>
+
+      <div class="grid-2 mb-16">
+
+        <!-- State combobox -->
+        <div class="form-group">
+          <label class="form-label">State</label>
+          <div class="si-wrap" @click.outside="stateOpen = false">
+            <input name="state" class="form-control" autocomplete="off"
+                   x-model="stateVal"
+                   placeholder="Search state…"
+                   @focus="stateOpen = true"
+                   @input="stateOpen = true">
+            <span class="si-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+            <div class="si-dropdown" x-show="stateOpen && stateFiltered.length" style="display:none;">
+              <template x-for="s in stateFiltered" :key="s.code">
+                <div class="si-option" @mousedown.prevent="pickState(s)">
+                  <span class="si-badge" x-text="s.code"></span>
+                  <span class="si-option-text" x-text="s.name"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- State Code combobox -->
+        <div class="form-group">
+          <label class="form-label">State Code</label>
+          <div class="si-wrap" @click.outside="codeOpen = false">
+            <input id="id_state_code" name="state_code" class="form-control" autocomplete="off"
+                   x-model="codeVal"
+                   placeholder="e.g. 07"
+                   @focus="codeOpen = true"
+                   @input="codeOpen = true">
+            <span class="si-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+            <div class="si-dropdown" x-show="codeOpen && codeFiltered.length" style="display:none;">
+              <template x-for="s in codeFiltered" :key="s.code">
+                <div class="si-option" @mousedown.prevent="pickCode(s)">
+                  <span class="si-badge" x-text="s.code"></span>
+                  <span class="si-option-text" x-text="s.name"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Country combobox -->
+      <div class="form-group">
+        <label class="form-label">Country</label>
+        <div class="si-wrap" @click.outside="countryOpen = false">
+          <input name="country" class="form-control" autocomplete="off"
+                 x-model="countryVal"
+                 placeholder="Search country…"
+                 @focus="countryOpen = true"
+                 @input="countryOpen = true">
+          <span class="si-chevron">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
+          <div class="si-dropdown" x-show="countryOpen && countryFiltered.length" style="display:none;">
+            <template x-for="c in countryFiltered" :key="c">
+              <div class="si-option" @mousedown.prevent="pickCountry(c)">
+                <span class="si-option-text" x-text="c"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
     </div>
 
+    <!-- ── Contact Information ── -->
     <div class="card section-gap">
       <div class="card-header"><h3 class="card-title">Contact Information</h3></div>
       <div class="grid-2 mb-16">
-        <div class="form-group"><label class="form-label required">Primary Mobile</label><input name="mobile_primary" class="form-control" value="{{ company.mobile_primary|default:'' }}" required></div>
-        <div class="form-group"><label class="form-label">Secondary Mobile</label><input name="mobile_secondary" class="form-control" value="{{ company.mobile_secondary|default:'' }}"></div>
+        <div class="form-group">
+          <label class="form-label required">Primary Mobile</label>
+          <input name="mobile_primary" class="form-control" value="{{ company.mobile_primary|default:'' }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Secondary Mobile</label>
+          <input name="mobile_secondary" class="form-control" value="{{ company.mobile_secondary|default:'' }}">
+        </div>
       </div>
-      <div class="form-group mb-16"><label class="form-label">Email</label><input name="email" type="email" class="form-control" value="{{ company.email|default:'' }}"></div>
-      <div class="form-group mb-16"><label class="form-label">Website</label><input name="website" class="form-control" value="{{ company.website|default:'' }}"></div>
+      <div class="form-group mb-16">
+        <label class="form-label">Email</label>
+        <input name="email" type="email" class="form-control" value="{{ company.email|default:'' }}">
+      </div>
+      <div class="form-group mb-16">
+        <label class="form-label">Website</label>
+        <input name="website" class="form-control" value="{{ company.website|default:'' }}">
+      </div>
 
       <div class="divider"></div>
       <div class="card-header"><h3 class="card-title">Authorised Signatory</h3></div>
-      <div class="form-group mb-16"><label class="form-label">Signatory Name</label><input name="authorised_signatory" class="form-control" value="{{ company.authorised_signatory|default:'' }}"></div>
-
+      <div class="form-group mb-16">
+        <label class="form-label">Signatory Name</label>
+        <input name="authorised_signatory" class="form-control" value="{{ company.authorised_signatory|default:'' }}">
+      </div>
       <div x-data="{ sigPreview: null }" class="mb-16">
         <div class="logo-preview">
           {% if company.signature_image %}
@@ -73,7 +238,8 @@
           <img x-show="sigPreview" :src="sigPreview" class="logo-preview-img" alt="Signature preview">
         </div>
         <label class="file-upload-btn" for="id_signature_image">Upload Signature</label>
-        <input id="id_signature_image" name="signature_image" type="file" accept="image/*" @change="sigPreview = URL.createObjectURL($event.target.files[0])">
+        <input id="id_signature_image" name="signature_image" type="file" accept="image/*"
+               @change="sigPreview = URL.createObjectURL($event.target.files[0])">
       </div>
     </div>
 
@@ -81,5 +247,6 @@
       <span class="text-muted text-sm">Last updated: {{ company.updated_at|date:"d M Y, H:i" }}</span>
       <button type="submit" class="btn btn-primary btn-lg">Save Company Profile</button>
     </div>
+
   </div>
 </form>
