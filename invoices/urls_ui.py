@@ -1,6 +1,8 @@
 from django.urls import path
 
 from invoices.views_ui import (
+	CustomerQuickCreateView,
+	CustomerSearchJsonView,
 	CustomerSearchView,
 	InvoiceCancelView,
 	InvoiceCreateView,
@@ -20,6 +22,8 @@ urlpatterns = [
 	path("", InvoiceListView.as_view(), name="invoice-list"),
 	path("create/", InvoiceCreateView.as_view(), name="invoice-create"),
 	path("customer-search/", CustomerSearchView.as_view(), name="customer-search"),
+	path("customer-search-json/", CustomerSearchJsonView.as_view(), name="customer-search-json"),
+	path("customer-quick-create/", CustomerQuickCreateView.as_view(), name="customer-quick-create"),
 	path("product-search/", ProductSearchView.as_view(), name="product-search"),
 	path("product-search-json/", ProductSearchJsonView.as_view(), name="product-search-json"),
 	path("<uuid:pk>/", InvoiceDetailView.as_view(), name="invoice-detail"),

@@ -144,10 +144,15 @@ class InvoiceDetailSerializer(serializers.ModelSerializer):
             "customer_state_code",
             "customer_mobile",
             "customer_email",
+            "shipping_same_as_billing",
             "shipping_name",
-            "shipping_address",
+            "shipping_address_line1",
+            "shipping_address_line2",
+            "shipping_city",
             "shipping_state",
             "shipping_state_code",
+            "shipping_pincode",
+            "shipping_country",
             "subtotal",
             "total_cgst",
             "total_sgst",
@@ -204,6 +209,15 @@ class InvoiceCreateSerializer(serializers.Serializer):
     customer_mobile = serializers.CharField(required=False, allow_blank=True)
     customer_email = serializers.EmailField(required=False, allow_blank=True)
     customer_address = serializers.CharField(required=False, allow_blank=True)
+    shipping_same_as_billing = serializers.BooleanField(default=True)
+    shipping_name = serializers.CharField(required=False, allow_blank=True)
+    shipping_address_line1 = serializers.CharField(required=False, allow_blank=True)
+    shipping_address_line2 = serializers.CharField(required=False, allow_blank=True)
+    shipping_city = serializers.CharField(required=False, allow_blank=True)
+    shipping_state = serializers.CharField(required=False, allow_blank=True)
+    shipping_state_code = serializers.CharField(required=False, allow_blank=True, max_length=5)
+    shipping_pincode = serializers.CharField(required=False, allow_blank=True)
+    shipping_country = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         if not attrs.get("line_items"):
@@ -211,6 +225,11 @@ class InvoiceCreateSerializer(serializers.Serializer):
         customer = attrs.get("customer")
         if customer is None and not attrs.get("customer_name"):
             raise serializers.ValidationError({"customer_name": "Customer name is required when customer is not provided"})
+        if not attrs.get("shipping_same_as_billing", True):
+            required_shipping = ["shipping_address_line1", "shipping_city", "shipping_state", "shipping_state_code", "shipping_pincode"]
+            missing = [f for f in required_shipping if not attrs.get(f)]
+            if missing:
+                raise serializers.ValidationError({"shipping_address": f"Missing fields: {', '.join(missing)}"})
         return attrs
 
 

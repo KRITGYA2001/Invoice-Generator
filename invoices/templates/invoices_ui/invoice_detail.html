@@ -87,8 +87,19 @@
         </div>
         <div>
           <div class="section-title">Ship To</div>
-          <div class="font-bold">{{ invoice.shipping_name|default:invoice.customer_name }}</div>
-          <div class="text-sm text-muted" style="white-space:pre-line">{{ invoice.shipping_address|default:invoice.customer_address }}</div>
+          {% if invoice.shipping_same_as_billing %}
+            <div class="font-bold">{{ invoice.customer_name }}</div>
+            <div class="text-sm text-muted" style="white-space:pre-line">{{ invoice.customer_address }}</div>
+            <div class="text-xs text-muted" style="margin-top:4px;font-style:italic">Same as billing address</div>
+          {% else %}
+            <div class="font-bold">{{ invoice.shipping_name|default:invoice.customer_name }}</div>
+            <div class="text-sm text-muted">
+              {{ invoice.shipping_address_line1 }}{% if invoice.shipping_address_line2 %}, {{ invoice.shipping_address_line2 }}{% endif %}<br>
+              {{ invoice.shipping_city }}{% if invoice.shipping_state %}, {{ invoice.shipping_state }}{% endif %}{% if invoice.shipping_pincode %} – {{ invoice.shipping_pincode }}{% endif %}<br>
+              {% if invoice.shipping_state_code %}State Code: {{ invoice.shipping_state_code }}<br>{% endif %}
+              {{ invoice.shipping_country }}
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>

@@ -120,16 +120,6 @@ def _apply_customer_payload(request: HttpRequest, customer: Customer, *, is_edit
     billing_pincode = (request.POST.get("billing_pincode") or "").strip()
     billing_country = (request.POST.get("billing_country") or "India").strip() or "India"
 
-    same_as_billing = _to_bool(request.POST.get("same_as_billing"))
-
-    shipping_address_line1 = (request.POST.get("shipping_address_line1") or "").strip()
-    shipping_address_line2 = (request.POST.get("shipping_address_line2") or "").strip()
-    shipping_city = (request.POST.get("shipping_city") or "").strip()
-    shipping_state = (request.POST.get("shipping_state") or "").strip()
-    shipping_state_code = (request.POST.get("shipping_state_code") or "").strip()
-    shipping_pincode = (request.POST.get("shipping_pincode") or "").strip()
-    shipping_country = (request.POST.get("shipping_country") or "India").strip() or "India"
-
     credit_limit = _parse_decimal(request.POST.get("credit_limit") or "0", "credit_limit", errors)
     payment_terms_days = _parse_non_negative_int(request.POST.get("payment_terms_days") or "0", "payment_terms_days", errors)
     opening_balance = _parse_decimal(request.POST.get("opening_balance") or "0", "opening_balance", errors)
@@ -168,15 +158,6 @@ def _apply_customer_payload(request: HttpRequest, customer: Customer, *, is_edit
     if payment_terms_days < 0:
         errors["payment_terms_days"] = "Payment terms must be 0 or greater"
 
-    if same_as_billing:
-        shipping_address_line1 = billing_address_line1
-        shipping_address_line2 = billing_address_line2
-        shipping_city = billing_city
-        shipping_state = billing_state
-        shipping_state_code = billing_state_code
-        shipping_pincode = billing_pincode
-        shipping_country = billing_country
-
     if errors:
         return form_data, errors
 
@@ -197,15 +178,6 @@ def _apply_customer_payload(request: HttpRequest, customer: Customer, *, is_edit
     customer.billing_state_code = billing_state_code
     customer.billing_pincode = billing_pincode
     customer.billing_country = billing_country
-
-    customer.same_as_billing = same_as_billing
-    customer.shipping_address_line1 = shipping_address_line1
-    customer.shipping_address_line2 = shipping_address_line2
-    customer.shipping_city = shipping_city
-    customer.shipping_state = shipping_state
-    customer.shipping_state_code = shipping_state_code
-    customer.shipping_pincode = shipping_pincode
-    customer.shipping_country = shipping_country
 
     customer.credit_limit = credit_limit
     customer.payment_terms_days = payment_terms_days

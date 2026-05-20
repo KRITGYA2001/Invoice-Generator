@@ -256,7 +256,7 @@ class InvoiceService:
 
     @staticmethod
     def _snapshot_customer(invoice, customer: Customer | None) -> None:
-        """Copy customer details onto the invoice record."""
+        """Copy customer billing details onto the invoice record."""
         if not customer:
             return
         invoice.customer_name = customer.display_name or customer.name
@@ -266,11 +266,6 @@ class InvoiceService:
         invoice.customer_state_code = customer.billing_state_code
         invoice.customer_mobile = customer.mobile_primary
         invoice.customer_email = customer.email
-        shipping = customer.effective_shipping_address
-        invoice.shipping_name = customer.display_name or customer.name
-        invoice.shipping_address = ", ".join(part for part in [shipping.get("address_line1"), shipping.get("address_line2"), shipping.get("city"), shipping.get("state"), shipping.get("state_code"), shipping.get("pincode"), shipping.get("country")] if part)
-        invoice.shipping_state = shipping.get("state", "")
-        invoice.shipping_state_code = shipping.get("state_code", "")
 
     @staticmethod
     def _snapshot_manual_customer(invoice, invoice_data: dict[str, Any]) -> None:
@@ -282,10 +277,47 @@ class InvoiceService:
         invoice.customer_state_code = invoice_data.get("customer_state_code", "")
         invoice.customer_mobile = invoice_data.get("customer_mobile", "")
         invoice.customer_email = invoice_data.get("customer_email", "")
-        invoice.shipping_name = invoice.customer_name
-        invoice.shipping_address = invoice.customer_address
-        invoice.shipping_state = invoice.customer_state
-        invoice.shipping_state_code = invoice.customer_state_code
+
+    @staticmethod
+    def _snapshot_shipping(invoice, customer: Customer | None, invoice_data: dict[str, Any]) -> None:
+        """Resolve and snapshot the shipping address onto the invoice record.
+
+        If shipping_same_as_billing is True, shipping fields are copied from the
+        already-snapshotted billing data. Otherwise the caller-supplied shipping
+        fields are used directly.
+        """
+        same = invoice_data.get("shipping_same_as_billing", True)
+        invoice.shipping_same_as_billing = same
+
+        if same:
+            # Mirror the billing snapshot already set by _snapshot_customer / _snapshot_manual_customer
+            if customer:
+                invoice.shipping_name = customer.display_name or customer.name
+                invoice.shipping_address_line1 = customer.billing_address_line1
+                invoice.shipping_address_line2 = customer.billing_address_line2
+                invoice.shipping_city = customer.billing_city
+                invoice.shipping_state = customer.billing_state
+                invoice.shipping_state_code = customer.billing_state_code
+                invoice.shipping_pincode = customer.billing_pincode
+                invoice.shipping_country = customer.billing_country
+            else:
+                invoice.shipping_name = invoice.customer_name
+                invoice.shipping_address_line1 = invoice_data.get("customer_address", "")
+                invoice.shipping_address_line2 = ""
+                invoice.shipping_city = ""
+                invoice.shipping_state = invoice.customer_state
+                invoice.shipping_state_code = invoice.customer_state_code
+                invoice.shipping_pincode = ""
+                invoice.shipping_country = ""
+        else:
+            invoice.shipping_name = invoice_data.get("shipping_name", "") or invoice.customer_name
+            invoice.shipping_address_line1 = invoice_data.get("shipping_address_line1", "")
+            invoice.shipping_address_line2 = invoice_data.get("shipping_address_line2", "")
+            invoice.shipping_city = invoice_data.get("shipping_city", "")
+            invoice.shipping_state = invoice_data.get("shipping_state", "")
+            invoice.shipping_state_code = invoice_data.get("shipping_state_code", "")
+            invoice.shipping_pincode = invoice_data.get("shipping_pincode", "")
+            invoice.shipping_country = invoice_data.get("shipping_country", "")
 
     @staticmethod
     def _snapshot_bank(invoice, company) -> None:
@@ -333,6 +365,7 @@ class InvoiceService:
                 InvoiceService._snapshot_customer(invoice, customer)
             else:
                 InvoiceService._snapshot_manual_customer(invoice, invoice_data)
+            InvoiceService._snapshot_shipping(invoice, customer, invoice_data)
             InvoiceService._snapshot_bank(invoice, company)
             invoice.is_interstate = bool(
                 customer and invoice.place_of_supply_code and customer.billing_state_code and invoice.place_of_supply_code != customer.billing_state_code

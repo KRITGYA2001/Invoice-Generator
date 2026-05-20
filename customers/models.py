@@ -48,14 +48,6 @@ class Customer(models.Model):
 	billing_state_code = models.CharField(max_length=5, validators=[state_code_validator])
 	billing_pincode = models.CharField(max_length=10)
 	billing_country = models.CharField(max_length=100, default="India")
-	same_as_billing = models.BooleanField(default=True)
-	shipping_address_line1 = models.CharField(max_length=255, blank=True)
-	shipping_address_line2 = models.CharField(max_length=255, blank=True)
-	shipping_city = models.CharField(max_length=100, blank=True)
-	shipping_state = models.CharField(max_length=100, blank=True)
-	shipping_state_code = models.CharField(max_length=5, blank=True)
-	shipping_pincode = models.CharField(max_length=10, blank=True)
-	shipping_country = models.CharField(max_length=100, blank=True)
 	credit_limit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 	payment_terms_days = models.PositiveIntegerField(default=0)
 	opening_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -73,29 +65,6 @@ class Customer(models.Model):
 
 	def __str__(self) -> str:
 		return self.display_name or self.name
-
-	@property
-	def effective_shipping_address(self) -> dict[str, str]:
-		"""Return the shipping address that should be used for the party."""
-		if self.same_as_billing:
-			return {
-				"address_line1": self.billing_address_line1,
-				"address_line2": self.billing_address_line2,
-				"city": self.billing_city,
-				"state": self.billing_state,
-				"state_code": self.billing_state_code,
-				"pincode": self.billing_pincode,
-				"country": self.billing_country,
-			}
-		return {
-			"address_line1": self.shipping_address_line1,
-			"address_line2": self.shipping_address_line2,
-			"city": self.shipping_city,
-			"state": self.shipping_state,
-			"state_code": self.shipping_state_code,
-			"pincode": self.shipping_pincode,
-			"country": self.shipping_country,
-		}
 
 	@property
 	def is_over_credit_limit(self) -> bool:

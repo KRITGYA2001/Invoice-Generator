@@ -18,15 +18,10 @@
 <form method="POST"
       x-data="customerForm({
         gstin:           '{{ form_data.gstin|default:customer.gstin|default:'' }}',
-        sameAsBilling:   {% if form_data.same_as_billing %}true{% elif is_edit %}{{ customer.same_as_billing|yesno:'true,false' }}{% else %}true{% endif %},
         billingState:    '{{ form_data.billing_state|default:customer.billing_state|default:'' }}',
         billingCode:     '{{ form_data.billing_state_code|default:customer.billing_state_code|default:'' }}',
         billingCity:     '{{ form_data.billing_city|default:customer.billing_city|default:'' }}',
-        billingCountry:  '{{ form_data.billing_country|default:customer.billing_country|default:'India' }}',
-        shippingState:   '{{ form_data.shipping_state|default:customer.shipping_state|default:'' }}',
-        shippingCode:    '{{ form_data.shipping_state_code|default:customer.shipping_state_code|default:'' }}',
-        shippingCity:    '{{ form_data.shipping_city|default:customer.shipping_city|default:'' }}',
-        shippingCountry: '{{ form_data.shipping_country|default:customer.shipping_country|default:'India' }}'
+        billingCountry:  '{{ form_data.billing_country|default:customer.billing_country|default:'India' }}'
       })">
   {% csrf_token %}
 
@@ -264,128 +259,6 @@
       </div>
     </section>
 
-    <!-- ── Shipping Address ── -->
-    <section class="card">
-      <div class="card-header"><h2 class="card-title">Shipping Address</h2></div>
-      <label class="toggle-switch">
-        <div class="toggle-label">
-          <div class="toggle-title">Same as Billing Address</div>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" name="same_as_billing" x-model="sameAsBilling"
-                 {% if customer.same_as_billing or not is_edit %}checked{% endif %}>
-          <span class="toggle-slider"></span>
-        </label>
-      </label>
-
-      <div x-show="!sameAsBilling" x-transition style="margin-top:14px">
-        <div class="form-group mb-16">
-          <label class="form-label">Address Line 1</label>
-          <input name="shipping_address_line1" class="form-control"
-                 value="{{ form_data.shipping_address_line1|default:customer.shipping_address_line1|default:'' }}">
-        </div>
-        <div class="form-group mb-16">
-          <label class="form-label">Address Line 2</label>
-          <input name="shipping_address_line2" class="form-control"
-                 value="{{ form_data.shipping_address_line2|default:customer.shipping_address_line2|default:'' }}">
-        </div>
-
-        <div class="grid-2 mb-16">
-          <!-- Shipping City -->
-          <div class="form-group">
-            <label class="form-label">City</label>
-            <div class="si-wrap" @click.outside="shippingCityOpen = false">
-              <input name="shipping_city" class="form-control" autocomplete="off"
-                     x-model="shippingCityVal" placeholder="Search city…"
-                     @focus="shippingCityOpen = true" @input="shippingCityOpen = true">
-              <span class="si-chevron">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-              </span>
-              <div class="si-dropdown" x-show="shippingCityOpen && shippingCityFiltered.length" style="display:none;">
-                <template x-for="c in shippingCityFiltered" :key="c">
-                  <div class="si-option" @mousedown.prevent="pickShippingCity(c)">
-                    <span class="si-option-text" x-text="c"></span>
-                  </div>
-                </template>
-              </div>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Pincode</label>
-            <input name="shipping_pincode" class="form-control"
-                   value="{{ form_data.shipping_pincode|default:customer.shipping_pincode|default:'' }}">
-          </div>
-        </div>
-
-        <div class="grid-2 mb-16">
-          <!-- Shipping State -->
-          <div class="form-group">
-            <label class="form-label">State</label>
-            <div class="si-wrap" @click.outside="shippingStateOpen = false">
-              <input name="shipping_state" class="form-control" autocomplete="off"
-                     x-model="shippingStateVal" placeholder="Search state…"
-                     @focus="shippingStateOpen = true" @input="shippingStateOpen = true">
-              <span class="si-chevron">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-              </span>
-              <div class="si-dropdown" x-show="shippingStateOpen && shippingStateFiltered.length" style="display:none;">
-                <template x-for="s in shippingStateFiltered" :key="s.code">
-                  <div class="si-option" @mousedown.prevent="pickShippingState(s)">
-                    <span class="si-badge" x-text="s.code"></span>
-                    <span class="si-option-text" x-text="s.name"></span>
-                  </div>
-                </template>
-              </div>
-            </div>
-          </div>
-
-          <!-- Shipping State Code -->
-          <div class="form-group">
-            <label class="form-label">State Code</label>
-            <div class="si-wrap" @click.outside="shippingCodeOpen = false">
-              <input name="shipping_state_code" class="form-control" autocomplete="off"
-                     x-model="shippingCodeVal" placeholder="e.g. 07"
-                     @focus="shippingCodeOpen = true" @input="shippingCodeOpen = true">
-              <span class="si-chevron">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-              </span>
-              <div class="si-dropdown" x-show="shippingCodeOpen && shippingCodeFiltered.length" style="display:none;">
-                <template x-for="s in shippingCodeFiltered" :key="s.code">
-                  <div class="si-option" @mousedown.prevent="pickShippingCode(s)">
-                    <span class="si-badge" x-text="s.code"></span>
-                    <span class="si-option-text" x-text="s.name"></span>
-                  </div>
-                </template>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Shipping Country -->
-        <div class="form-group">
-          <label class="form-label">Country</label>
-          <div class="si-wrap" @click.outside="shippingCountryOpen = false">
-            <input name="shipping_country" class="form-control" autocomplete="off"
-                   x-model="shippingCountryVal" placeholder="Search country…"
-                   @focus="shippingCountryOpen = true" @input="shippingCountryOpen = true">
-            <span class="si-chevron">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </span>
-            <div class="si-dropdown" x-show="shippingCountryOpen && shippingCountryFiltered.length" style="display:none;">
-              <template x-for="c in shippingCountryFiltered" :key="c">
-                <div class="si-option" @mousedown.prevent="pickShippingCountry(c)">
-                  <span class="si-option-text" x-text="c"></span>
-                </div>
-              </template>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div x-show="sameAsBilling" class="text-sm text-muted" style="padding:12px 0">
-        Shipping address same as billing address
-      </div>
-    </section>
 
     <div class="full-width flex-between mt-24">
       <a href="{% url 'customers_ui:customer-list' %}" class="btn btn-secondary">&larr; Cancel</a>

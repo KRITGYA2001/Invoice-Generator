@@ -137,6 +137,12 @@ def _invoice_from_post(post_data) -> dict:
         "vehicle_number": (post_data.get("vehicle_number") or "").strip(),
         "station": (post_data.get("station") or "").strip(),
         "eway_bill_number": (post_data.get("eway_bill_number") or "").strip(),
+        "gr_rr_number": (post_data.get("gr_rr_number") or "").strip(),
+        "order_by": (post_data.get("order_by") or "").strip(),
+        "bags": (post_data.get("bags") or "").strip(),
+        "freight_charges": _to_decimal(post_data.get("freight_charges") or "0"),
+        "payment_mode": (post_data.get("payment_mode") or "").strip(),
+        "ack_number": (post_data.get("ack_number") or "").strip(),
         "po_number": (post_data.get("po_number") or "").strip(),
         "po_date": parse_date(post_data.get("po_date") or "") or None,
         "notes": (post_data.get("notes") or "").strip(),
@@ -148,6 +154,15 @@ def _invoice_from_post(post_data) -> dict:
         "customer_mobile": (post_data.get("customer_mobile") or "").strip(),
         "customer_email": (post_data.get("customer_email") or "").strip(),
         "customer_address": (post_data.get("customer_address") or "").strip(),
+        "shipping_same_as_billing": (post_data.get("shipping_same_as_billing") or "true").lower() in {"true", "1", "yes", "on"},
+        "shipping_name": (post_data.get("shipping_name") or "").strip(),
+        "shipping_address_line1": (post_data.get("shipping_address_line1") or "").strip(),
+        "shipping_address_line2": (post_data.get("shipping_address_line2") or "").strip(),
+        "shipping_city": (post_data.get("shipping_city") or "").strip(),
+        "shipping_state": (post_data.get("shipping_state") or "").strip(),
+        "shipping_state_code": (post_data.get("shipping_state_code") or "").strip(),
+        "shipping_pincode": (post_data.get("shipping_pincode") or "").strip(),
+        "shipping_country": (post_data.get("shipping_country") or "India").strip() or "India",
     }
 
 
@@ -166,10 +181,25 @@ def _invoice_from_post_for_template(post_data) -> SimpleNamespace:
         customer_state_code=(post_data.get("customer_state_code") or "").strip(),
         customer_mobile=(post_data.get("customer_mobile") or "").strip(),
         customer_address=(post_data.get("customer_address") or "").strip(),
+        shipping_same_as_billing=(post_data.get("shipping_same_as_billing") or "true").lower() in {"true", "1", "yes", "on"},
+        shipping_name=(post_data.get("shipping_name") or "").strip(),
+        shipping_address_line1=(post_data.get("shipping_address_line1") or "").strip(),
+        shipping_address_line2=(post_data.get("shipping_address_line2") or "").strip(),
+        shipping_city=(post_data.get("shipping_city") or "").strip(),
+        shipping_state=(post_data.get("shipping_state") or "").strip(),
+        shipping_state_code=(post_data.get("shipping_state_code") or "").strip(),
+        shipping_pincode=(post_data.get("shipping_pincode") or "").strip(),
+        shipping_country=(post_data.get("shipping_country") or "India").strip() or "India",
         transport_mode=(post_data.get("transport_mode") or "").strip(),
         vehicle_number=(post_data.get("vehicle_number") or "").strip(),
         station=(post_data.get("station") or "").strip(),
         eway_bill_number=(post_data.get("eway_bill_number") or "").strip(),
+        gr_rr_number=(post_data.get("gr_rr_number") or "").strip(),
+        order_by=(post_data.get("order_by") or "").strip(),
+        bags=(post_data.get("bags") or "").strip(),
+        freight_charges=_to_decimal(post_data.get("freight_charges") or "0"),
+        payment_mode=(post_data.get("payment_mode") or "").strip(),
+        ack_number=(post_data.get("ack_number") or "").strip(),
         po_number=(post_data.get("po_number") or "").strip(),
         po_date=parse_date(post_data.get("po_date") or "") or None,
         notes=(post_data.get("notes") or "").strip(),
@@ -416,6 +446,12 @@ class InvoiceUpdateView(OnboardingCheckMixin, View):
                     "vehicle_number",
                     "station",
                     "eway_bill_number",
+                    "gr_rr_number",
+                    "order_by",
+                    "bags",
+                    "freight_charges",
+                    "payment_mode",
+                    "ack_number",
                     "po_number",
                     "po_date",
                     "notes",
@@ -435,6 +471,7 @@ class InvoiceUpdateView(OnboardingCheckMixin, View):
                     InvoiceService._snapshot_manual_customer(invoice, data)
                     invoice.is_interstate = False
 
+                InvoiceService._snapshot_shipping(invoice, customer, data)
                 InvoiceService._snapshot_bank(invoice, company)
                 invoice.updated_by = request.user
                 invoice.save()
@@ -550,6 +587,12 @@ class InvoiceDuplicateView(View):
                     vehicle_number=source.vehicle_number,
                     station=source.station,
                     eway_bill_number="",
+                    gr_rr_number="",
+                    order_by=source.order_by,
+                    bags=source.bags,
+                    freight_charges=source.freight_charges,
+                    payment_mode=source.payment_mode,
+                    ack_number="",
                     po_number=source.po_number,
                     po_date=source.po_date,
                     customer_name=source.customer_name,
@@ -559,10 +602,15 @@ class InvoiceDuplicateView(View):
                     customer_state_code=source.customer_state_code,
                     customer_mobile=source.customer_mobile,
                     customer_email=source.customer_email,
+                    shipping_same_as_billing=source.shipping_same_as_billing,
                     shipping_name=source.shipping_name,
-                    shipping_address=source.shipping_address,
+                    shipping_address_line1=source.shipping_address_line1,
+                    shipping_address_line2=source.shipping_address_line2,
+                    shipping_city=source.shipping_city,
                     shipping_state=source.shipping_state,
                     shipping_state_code=source.shipping_state_code,
+                    shipping_pincode=source.shipping_pincode,
+                    shipping_country=source.shipping_country,
                     terms_and_conditions=source.terms_and_conditions,
                     notes=source.notes,
                     bank_name=source.bank_name,
@@ -737,6 +785,45 @@ class ProductSearchView(View):
 
 
 @method_decorator(login_required, name="dispatch")
+class CustomerSearchJsonView(View):
+    def get(self, request: HttpRequest) -> HttpResponse:
+        from django.http import JsonResponse
+        company = request.user.company_profile
+        query = (request.GET.get("q") or "").strip()
+
+        qs = Customer.objects.filter(company=company, is_active=True)
+        if len(query) >= 2:
+            qs = qs.filter(
+                Q(name__icontains=query)
+                | Q(display_name__icontains=query)
+                | Q(gstin__icontains=query)
+                | Q(mobile_primary__icontains=query)
+            )
+        customers = qs.order_by("name")[:10]
+
+        data = [
+            {
+                "id": str(c.id),
+                "name": c.name,
+                "display_name": c.display_name or c.name,
+                "gstin": c.gstin,
+                "billing_state": c.billing_state,
+                "billing_state_code": c.billing_state_code,
+                "billing_address_line1": c.billing_address_line1,
+                "billing_address_line2": c.billing_address_line2,
+                "billing_city": c.billing_city,
+                "billing_pincode": c.billing_pincode,
+                "billing_country": c.billing_country,
+                "full_billing_address": c.full_billing_address,
+                "mobile_primary": c.mobile_primary,
+                "email": c.email,
+            }
+            for c in customers
+        ]
+        return JsonResponse(data, safe=False)
+
+
+@method_decorator(login_required, name="dispatch")
 class ProductSearchJsonView(View):
     def get(self, request: HttpRequest) -> HttpResponse:
         from django.http import JsonResponse
@@ -775,3 +862,94 @@ class ProductSearchJsonView(View):
             for p in qs
         ]
         return JsonResponse(data, safe=False)
+
+
+@method_decorator(login_required, name="dispatch")
+class CustomerQuickCreateView(View):
+    """Create a party inline from the invoice form and return JSON."""
+
+    def post(self, request: HttpRequest) -> HttpResponse:
+        import re
+        from django.http import JsonResponse
+
+        company = request.user.company_profile
+        errors: dict[str, str] = {}
+
+        name = (request.POST.get("name") or "").strip()
+        display_name = (request.POST.get("display_name") or "").strip()
+        party_type = (request.POST.get("party_type") or Customer.PARTY_BUSINESS).strip()
+        gstin = (request.POST.get("gstin") or "").strip().upper()
+        mobile_primary = (request.POST.get("mobile_primary") or "").strip()
+        email = (request.POST.get("email") or "").strip().lower()
+        billing_address_line1 = (request.POST.get("billing_address_line1") or "").strip()
+        billing_address_line2 = (request.POST.get("billing_address_line2") or "").strip()
+        billing_city = (request.POST.get("billing_city") or "").strip()
+        billing_state = (request.POST.get("billing_state") or "").strip()
+        billing_state_code = (request.POST.get("billing_state_code") or "").strip()
+        billing_pincode = (request.POST.get("billing_pincode") or "").strip()
+        billing_country = (request.POST.get("billing_country") or "India").strip() or "India"
+
+        if gstin and not billing_state_code and len(gstin) >= 2:
+            billing_state_code = gstin[:2]
+
+        if party_type not in {c[0] for c in Customer.PARTY_TYPE_CHOICES}:
+            party_type = Customer.PARTY_BUSINESS
+
+        GSTIN_RE = re.compile(r"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$")
+        SC_RE = re.compile(r"^[0-9]{2}$")
+
+        if not name:
+            errors["name"] = "Legal / Trade name is required"
+        elif Customer.objects.filter(company=company, name__iexact=name).exists():
+            errors["name"] = "A party with this name already exists"
+
+        if gstin and not GSTIN_RE.match(gstin):
+            errors["gstin"] = "Enter a valid GSTIN"
+
+        if not mobile_primary:
+            errors["mobile_primary"] = "Mobile number is required"
+        if not billing_address_line1:
+            errors["billing_address_line1"] = "Address line 1 is required"
+        if not billing_city:
+            errors["billing_city"] = "City is required"
+        if not billing_state:
+            errors["billing_state"] = "State is required"
+        if not billing_state_code:
+            errors["billing_state_code"] = "State code is required"
+        elif not SC_RE.match(billing_state_code):
+            errors["billing_state_code"] = "Must be exactly 2 digits"
+        if not billing_pincode:
+            errors["billing_pincode"] = "Pincode is required"
+
+        if errors:
+            return JsonResponse({"success": False, "errors": errors}, status=400)
+
+        customer = Customer.objects.create(
+            company=company,
+            name=name,
+            display_name=display_name,
+            party_type=party_type,
+            gstin=gstin,
+            mobile_primary=mobile_primary,
+            email=email,
+            billing_address_line1=billing_address_line1,
+            billing_address_line2=billing_address_line2,
+            billing_city=billing_city,
+            billing_state=billing_state,
+            billing_state_code=billing_state_code,
+            billing_pincode=billing_pincode,
+            billing_country=billing_country,
+        )
+
+        return JsonResponse({
+            "success": True,
+            "customer": {
+                "id": str(customer.id),
+                "name": customer.name,
+                "display_name": customer.display_name or customer.name,
+                "gstin": customer.gstin,
+                "billing_state": customer.billing_state,
+                "billing_state_code": customer.billing_state_code,
+                "mobile_primary": customer.mobile_primary,
+            },
+        })

@@ -100,20 +100,6 @@
       </div>
     </section>
 
-    <section class="card mb-16">
-      <div class="card-header"><h2 class="card-title">Shipping Address</h2></div>
-      {% if customer.same_as_billing %}
-        <span class="text-muted text-sm">Same as billing address</span>
-      {% else %}
-        <div class="text-sm">
-          {{ customer.shipping_address_line1 }}<br>
-          {% if customer.shipping_address_line2 %}{{ customer.shipping_address_line2 }}<br>{% endif %}
-          {{ customer.shipping_city }} - {{ customer.shipping_pincode }}<br>
-          {{ customer.shipping_state }} ({{ customer.shipping_state_code }})<br>
-          {{ customer.shipping_country }}
-        </div>
-      {% endif %}
-    </section>
 
     <section class="card">
       <div class="card-header">

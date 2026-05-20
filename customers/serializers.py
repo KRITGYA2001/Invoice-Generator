@@ -62,7 +62,6 @@ class CustomerDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for party create/retrieve/update."""
 
     contacts = CustomerContactSerializer(many=True, read_only=True)
-    effective_shipping_address = serializers.SerializerMethodField()
     full_billing_address = serializers.SerializerMethodField()
 
     class Meta:
@@ -86,14 +85,6 @@ class CustomerDetailSerializer(serializers.ModelSerializer):
             "billing_state_code",
             "billing_pincode",
             "billing_country",
-            "same_as_billing",
-            "shipping_address_line1",
-            "shipping_address_line2",
-            "shipping_city",
-            "shipping_state",
-            "shipping_state_code",
-            "shipping_pincode",
-            "shipping_country",
             "credit_limit",
             "payment_terms_days",
             "opening_balance",
@@ -103,7 +94,6 @@ class CustomerDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "contacts",
-            "effective_shipping_address",
             "full_billing_address",
         ]
         read_only_fields = ["id", "company", "current_balance", "created_at", "updated_at", "contacts"]
@@ -122,25 +112,6 @@ class CustomerDetailSerializer(serializers.ModelSerializer):
         if value:
             state_code_validator(value)
         return value
-
-    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        same_as_billing = attrs.get("same_as_billing", getattr(self.instance, "same_as_billing", True))
-        if not same_as_billing:
-            required_fields = [
-                "shipping_address_line1",
-                "shipping_city",
-                "shipping_state",
-                "shipping_state_code",
-                "shipping_pincode",
-                "shipping_country",
-            ]
-            missing = [field for field in required_fields if not attrs.get(field) and not getattr(self.instance, field, "")]
-            if missing:
-                raise serializers.ValidationError({"shipping_address": f"Missing fields: {', '.join(missing)}"})
-        return attrs
-
-    def get_effective_shipping_address(self, obj: Customer) -> dict[str, str]:
-        return obj.effective_shipping_address
 
     def get_full_billing_address(self, obj: Customer) -> str:
         return obj.full_billing_address

@@ -140,6 +140,19 @@ class InvoicePDFService:
 
         bank = company.bank_details.filter(is_primary=True, is_active=True).first()
         gst_breakdown = InvoicePDFService.get_gst_breakdown(invoice)
+        line_items_qs = list(invoice.line_items.all().order_by("sr_no"))
+
+        # Total quantity across all line items (for Grand Total row display)
+        total_qty = sum(item.quantity for item in line_items_qs)
+        units = [item.unit for item in line_items_qs if item.unit]
+        predominant_unit = max(set(units), key=units.count) if units else "Pcs."
+        total_qty_display = f"{total_qty:,.3f}".rstrip("0").rstrip(".") + f" {predominant_unit}"
+
+        # Blank filler rows so the table always has minimum visual height
+        min_rows = 6
+        filler_count = max(0, min_rows - len(line_items_qs))
+
+        first_item = line_items_qs[0] if line_items_qs else None
 
         return {
             "invoice": invoice,
@@ -147,7 +160,10 @@ class InvoicePDFService:
             "bank": bank,
             "settings": inv_settings,
             "gst_breakdown": gst_breakdown,
-            "line_items": invoice.line_items.all().order_by("sr_no"),
+            "line_items": line_items_qs,
+            "first_item": first_item,
+            "filler_rows": range(filler_count),
+            "total_qty_display": total_qty_display,
             "company_logo_uri": InvoicePDFService.file_to_data_uri(company.logo),
             "company_signature_uri": InvoicePDFService.file_to_data_uri(company.signature_image),
             "bank_qr_uri": InvoicePDFService.file_to_data_uri(bank.qr_code_image if bank else None),

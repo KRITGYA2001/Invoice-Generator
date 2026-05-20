@@ -38,6 +38,7 @@ class CompanyProfile(models.Model):
     mobile_secondary = models.CharField(max_length=15, blank=True)
     email = models.EmailField(blank=True)
     website = models.URLField(blank=True)
+    deals_in = models.TextField(blank=True, help_text="Products / services dealt in (printed on invoice header)")
     logo = models.ImageField(upload_to="company/logos/", null=True, blank=True)
     logo_text = models.CharField(max_length=6, blank=True)
     signature_image = models.ImageField(upload_to="company/signatures/", null=True, blank=True)
