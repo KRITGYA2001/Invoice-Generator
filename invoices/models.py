@@ -84,6 +84,7 @@ class Invoice(models.Model):
 	issued_at = models.DateTimeField(null=True, blank=True)
 	cancelled_at = models.DateTimeField(null=True, blank=True)
 	cancellation_reason = models.TextField(blank=True)
+	use_esign = models.BooleanField(default=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 

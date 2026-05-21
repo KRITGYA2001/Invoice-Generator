@@ -9,7 +9,7 @@
 
 body {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 12.5px;
+  font-size: 13px;
   color: #000;
   background: #fff;
   line-height: 1.4;
@@ -18,18 +18,26 @@ body {
 /* ── Outer page wrapper with border ── */
 .invoice-page {
   width: 210mm;
-  min-height: 277mm;
+  min-height: 275mm;
   border: 1.5px solid #000;
   position: relative;
   background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Spacer that pushes footer to bottom ── */
+.invoice-spacer {
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── Copy label: top-right, italic ── */
 .copy-label {
   position: absolute;
-  top: 5px;
-  right: 8px;
-  font-size: 11px;
+  top: 6px;
+  right: 10px;
+  font-size: 12px;
   font-style: italic;
   color: #000;
   font-weight: normal;
@@ -38,25 +46,25 @@ body {
 /* ── HEADER ── */
 .header {
   display: grid;
-  grid-template-columns: 70px 1fr 70px;
+  grid-template-columns: 78px 1fr 78px;
   align-items: flex-start;
-  padding: 8px 8px 6px 8px;
+  padding: 10px 8px 8px 8px;
 }
 
 .header-logo img {
-  width: 60px;
-  height: 60px;
+  width: 68px;
+  height: 68px;
   object-fit: contain;
 }
 
 .header-logo-placeholder {
-  width: 60px;
-  height: 60px;
+  width: 68px;
+  height: 68px;
   background: #eee;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: #333;
   border: 1px solid #ccc;
@@ -64,57 +72,57 @@ body {
 
 .header-center {
   text-align: center;
-  padding: 0 6px;
+  padding: 0 8px;
 }
 
 .header-tax-label {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.03em;
-  margin-bottom: 2px;
+  letter-spacing: 0.05em;
+  margin-bottom: 3px;
 }
 
 .header-company-name {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: 0.01em;
   line-height: 1.2;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 
 .header-address {
-  font-size: 11px;
-  color: #000;
-  margin-bottom: 2px;
-}
-
-.header-contact {
-  font-size: 11px;
-  color: #000;
-  margin-bottom: 2px;
-}
-
-.header-website {
-  font-size: 11px;
+  font-size: 12.5px;
   color: #000;
   margin-bottom: 3px;
 }
 
-.header-deals-in {
-  font-size: 10.5px;
+.header-contact {
+  font-size: 12.5px;
+  color: #000;
+  margin-bottom: 3px;
+}
+
+.header-website {
+  font-size: 12.5px;
   color: #000;
   margin-bottom: 4px;
 }
 
-.header-gstin {
+.header-deals-in {
   font-size: 12px;
+  color: #000;
+  margin-bottom: 5px;
+}
+
+.header-gstin {
+  font-size: 13px;
   font-weight: 700;
   color: #000;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
 .header-udyam {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: #000;
 }
@@ -130,7 +138,7 @@ body {
 }
 
 .meta-col {
-  padding: 5px 8px;
+  padding: 7px 10px;
 }
 
 .meta-col:first-child {
@@ -139,12 +147,12 @@ body {
 
 .meta-row {
   display: flex;
-  margin-bottom: 2px;
-  font-size: 12px;
+  margin-bottom: 3px;
+  font-size: 12.5px;
 }
 
 .meta-label {
-  width: 115px;
+  width: 125px;
   flex-shrink: 0;
   color: #000;
 }
@@ -155,7 +163,7 @@ body {
 }
 
 .meta-colon {
-  margin-right: 4px;
+  margin-right: 5px;
 }
 
 /* ── Bill To / Ship To ── */
@@ -165,7 +173,7 @@ body {
 }
 
 .address-col {
-  padding: 6px 8px;
+  padding: 8px 10px;
 }
 
 .address-col:first-child {
@@ -173,60 +181,60 @@ body {
 }
 
 .address-label {
-  font-size: 12px;
+  font-size: 13px;
   font-style: italic;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .address-name {
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .address-text {
-  font-size: 11.5px;
-  margin-bottom: 2px;
-  line-height: 1.5;
+  font-size: 13px;
+  margin-bottom: 3px;
+  line-height: 1.6;
 }
 
 .address-gstin {
-  font-size: 11.5px;
-  margin-top: 4px;
+  font-size: 13px;
+  margin-top: 6px;
 }
 
 .address-qr-col {
-  padding: 4px 6px;
+  padding: 6px 8px;
   border-left: 1px solid #000;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  min-width: 108px;
+  min-width: 112px;
 }
 
 .address-qr-col img {
-  width: 95px;
-  height: 95px;
+  width: 98px;
+  height: 98px;
   object-fit: contain;
 }
 
 .qr-placeholder-sm {
-  width: 95px;
-  height: 95px;
+  width: 98px;
+  height: 98px;
   border: 1px solid #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: 10px;
   color: #aaa;
 }
 
 /* ── IRN row ── */
 .irn-row {
-  padding: 4px 8px;
-  font-size: 10px;
+  padding: 6px 10px;
+  font-size: 11px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -241,20 +249,20 @@ body {
 .irn-right {
   white-space: nowrap;
   text-align: right;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 /* ── Line Items Table ── */
 .items-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 
 .items-table th {
   border: 1px solid #000;
-  padding: 4px 5px;
-  font-size: 11px;
+  padding: 5px 5px;
+  font-size: 12px;
   font-weight: 700;
   text-align: center;
   background: #fff;
@@ -276,14 +284,14 @@ body {
 .filler-row td {
   border-top: none;
   border-bottom: none;
-  height: 18px;
+  height: 22px;
 }
 
 /* Totals rows: no borders except rightmost amount cell */
 .totals-row td {
   border: none;
   padding: 2px 5px;
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 
 .totals-row .amount-cell {
@@ -299,8 +307,8 @@ body {
   border-bottom: 1px solid #000;
   border-left: none;
   border-right: none;
-  padding: 5px 6px;
-  font-size: 13px;
+  padding: 6px 7px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -311,12 +319,12 @@ body {
 .gst-summary {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .gst-summary th {
   border: 1px solid #000;
-  padding: 3px 6px;
+  padding: 4px 7px;
   font-weight: 700;
   background: #fff;
   text-align: center;
@@ -324,7 +332,7 @@ body {
 
 .gst-summary td {
   border: 1px solid #000;
-  padding: 3px 6px;
+  padding: 4px 7px;
   text-align: center;
 }
 
@@ -333,8 +341,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px 8px;
-  font-size: 11.5px;
+  padding: 7px 10px;
+  font-size: 12.5px;
 }
 
 .amount-words-text {
@@ -346,117 +354,134 @@ body {
   font-style: italic;
   font-weight: 700;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 /* ── Bank Details ── */
 .bank-details-block {
-  padding: 5px 8px;
+  padding: 10px 12px 12px 12px;
   text-align: center;
-  font-size: 11.5px;
+  font-size: 13.5px;
 }
 
 .bank-details-title {
   font-weight: 700;
-  font-size: 12px;
+  font-size: 17px;
   text-decoration: underline;
-  margin-bottom: 2px;
-  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  letter-spacing: 0.06em;
 }
 
 .bank-details-line {
-  font-size: 11.5px;
+  font-size: 13.5px;
+  line-height: 1.8;
 }
 
 /* ── Footer ── */
 .footer-section {
   display: grid;
-  grid-template-columns: 1fr 110px 140px;
-  min-height: 70px;
+  grid-template-columns: 40% 35% 25%;
+  height: 140px;
+  overflow: hidden;
 }
 
 .footer-terms {
-  padding: 6px 8px;
+  padding: 8px 10px;
   border-right: 1px solid #000;
+  overflow: hidden;
 }
 
 .footer-terms-title {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   margin-bottom: 3px;
 }
 
 .footer-terms-eoe {
-  font-size: 10.5px;
-  margin-bottom: 2px;
+  font-size: 12px;
+  margin-bottom: 3px;
 }
 
 .footer-terms ol {
-  padding-left: 12px;
-  font-size: 10px;
+  padding-left: 14px;
+  font-size: 11.5px;
   color: #000;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .footer-qr {
-  padding: 6px 8px;
+  padding: 5px 6px;
   text-align: center;
   border-right: 1px solid #000;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .footer-qr-title {
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .footer-qr img {
-  width: 90px;
-  height: 90px;
+  width: 112px;
+  height: 112px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .qr-placeholder-footer {
-  width: 90px;
-  height: 90px;
+  width: 112px;
+  height: 112px;
   border: 1px solid #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: 10px;
   color: #aaa;
+  flex-shrink: 0;
 }
 
 .footer-signature {
-  padding: 6px 8px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  overflow: hidden;
 }
 
 .footer-sig-for {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.footer-sig-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .footer-sig-image img {
-  max-height: 35px;
-  max-width: 120px;
+  max-height: 36px;
+  max-width: 100%;
   object-fit: contain;
+  margin-bottom: 3px;
 }
 
 .footer-sig-line {
   border-top: 1px solid #555;
-  margin-top: 22px;
+  width: 100%;
   margin-bottom: 3px;
 }
 
 .footer-sig-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   text-align: center;
 }
@@ -644,8 +669,8 @@ body {
   <table class="items-table">
     <thead>
       <tr>
-        <th style="width:28px">S.No.</th>
-        <th style="width:90px">Item</th>
+        <th style="width:32px">S.No.</th>
+        <th style="width:120px">Item</th>
         <th>Description<br>Of Goods</th>
         <th style="width:68px">HSN/SAC<br>Code</th>
         <th style="width:62px">Quantity</th>
@@ -807,6 +832,16 @@ body {
   </div>
   {% endif %}
 
+  {% if invoice.notes %}
+  <hr class="hr">
+  <div style="padding:4px 8px; font-size:10.5px; font-style:italic;">
+    <strong>Note:</strong> {{ invoice.notes }}
+  </div>
+  {% endif %}
+
+  <!-- Spacer pushes footer to the bottom of the A4 page -->
+  <div class="invoice-spacer"></div>
+
   <hr class="hr">
   <div class="footer-section">
 
@@ -833,8 +868,8 @@ body {
 
     <div class="footer-signature">
       <div class="footer-sig-for">For {{ company.company_name }}</div>
-      <div>
-        {% if settings.show_signature and company_signature_uri %}
+      <div class="footer-sig-bottom">
+        {% if invoice.use_esign and company_signature_uri %}
           <div class="footer-sig-image">
             <img src="{{ company_signature_uri }}" alt="Signature">
           </div>
@@ -845,13 +880,6 @@ body {
     </div>
 
   </div>
-
-  {% if invoice.notes %}
-  <hr class="hr">
-  <div style="padding:4px 8px; font-size:10.5px; font-style:italic;">
-    <strong>Note:</strong> {{ invoice.notes }}
-  </div>
-  {% endif %}
 
 </div>
 

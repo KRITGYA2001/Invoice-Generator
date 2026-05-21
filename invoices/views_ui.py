@@ -147,6 +147,7 @@ def _invoice_from_post(post_data) -> dict:
         "po_date": parse_date(post_data.get("po_date") or "") or None,
         "notes": (post_data.get("notes") or "").strip(),
         "terms_and_conditions": (post_data.get("terms_and_conditions") or "").strip(),
+        "use_esign": post_data.get("use_esign") == "esign",
         "customer_name": (post_data.get("customer_name") or "").strip(),
         "customer_gstin": (post_data.get("customer_gstin") or "").strip().upper(),
         "customer_state": (post_data.get("customer_state") or "").strip(),
@@ -204,6 +205,7 @@ def _invoice_from_post_for_template(post_data) -> SimpleNamespace:
         po_date=parse_date(post_data.get("po_date") or "") or None,
         notes=(post_data.get("notes") or "").strip(),
         terms_and_conditions=(post_data.get("terms_and_conditions") or "").strip(),
+        use_esign=post_data.get("use_esign") == "esign",
     )
 
 
@@ -456,6 +458,7 @@ class InvoiceUpdateView(OnboardingCheckMixin, View):
                     "po_date",
                     "notes",
                     "terms_and_conditions",
+                    "use_esign",
                 ]:
                     setattr(invoice, field, data.get(field))
 
@@ -622,6 +625,7 @@ class InvoiceDuplicateView(View):
                     issued_at=None,
                     cancelled_at=None,
                     cancellation_reason="",
+                    use_esign=source.use_esign,
                     created_by=request.user,
                     updated_by=request.user,
                 )

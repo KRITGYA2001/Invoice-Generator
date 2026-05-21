@@ -148,8 +148,8 @@ class InvoicePDFService:
         predominant_unit = max(set(units), key=units.count) if units else "Pcs."
         total_qty_display = f"{total_qty:,.3f}".rstrip("0").rstrip(".") + f" {predominant_unit}"
 
-        # Blank filler rows so the table always has minimum visual height
-        min_rows = 6
+        # Blank filler rows so the table fills the A4 page
+        min_rows = 3
         filler_count = max(0, min_rows - len(line_items_qs))
 
         first_item = line_items_qs[0] if line_items_qs else None
@@ -266,10 +266,10 @@ class InvoicePDFService:
                     format="A4",
                     print_background=True,
                     margin={
-                        "top": "15mm",
-                        "right": "12mm",
-                        "bottom": "15mm",
-                        "left": "12mm",
+                        "top": "5mm",
+                        "right": "6mm",
+                        "bottom": "5mm",
+                        "left": "6mm",
                     },
                     prefer_css_page_size=False,
                 )
