@@ -770,19 +770,14 @@ table.data-table .actions-col {
   border-color: var(--brand-dark);
 }
 
-/* Search dropdown */
+/* Search dropdown — uses position:fixed set inline via Alpine so it escapes table overflow */
 .search-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
   background: white;
   border: 1px solid var(--gray-200);
-  border-top: none;
-  border-radius: 0 0 var(--border-radius) var(--border-radius);
-  box-shadow: var(--shadow-md);
-  z-index: 50;
-  max-height: 240px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+  z-index: 9999;
+  max-height: 280px;
   overflow-y: auto;
 }
 
@@ -795,8 +790,11 @@ table.data-table .actions-col {
   transition: background var(--transition);
 }
 
-.search-result-item:hover {
-  background: var(--gray-50);
+.search-result-item:hover,
+.search-result-item.is-focused {
+  background: var(--accent-light);
+  border-left: 2px solid var(--accent);
+  padding-left: 12px;
 }
 
 .search-result-item:last-child {
@@ -1166,6 +1164,12 @@ table.data-table .actions-col {
 
 .si-dropdown::-webkit-scrollbar { width: 4px; }
 .si-dropdown::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+/* Drop-up variant — used inside modals where there's no room below */
+.si-drop-up .si-dropdown {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
 
 /* Each option row */
 .si-option {

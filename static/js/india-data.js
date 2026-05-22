@@ -325,3 +325,4 @@ function customerForm(opts) {
     pickShippingCountry(c) { this.shippingCountryVal = c; this.shippingCountryOpen = false; },
   };
 }
+

@@ -138,8 +138,10 @@
         </p>
       </div>
 
-      <div class="card mb-16" x-data="{ sameAsBilling: {{ invoice.shipping_same_as_billing|yesno:'true,false'|default:'true' }} }">
+      <div class="card mb-16"
+           x-data="{ sameAsBilling: {{ invoice.shipping_same_as_billing|yesno:'true,false'|default:'true' }} }">
         <div class="card-title mb-12">Ship To</div>
+
         <div class="form-group mb-8">
           <label class="flex-center gap-8" style="cursor:pointer;font-size:13px;font-weight:500">
             <input type="checkbox" x-model="sameAsBilling">
@@ -147,39 +149,124 @@
           </label>
         </div>
         <input type="hidden" name="shipping_same_as_billing" :value="sameAsBilling ? 'true' : 'false'">
+
         <div x-show="!sameAsBilling" x-transition style="display:none">
+
           <div class="grid-2" style="margin-top:8px">
             <div class="form-group">
               <label class="form-label">Ship To Name</label>
-              <input name="shipping_name" class="form-control" value="{{ invoice.shipping_name|default:'' }}" placeholder="Recipient / Delivery name">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Country</label>
-              <input name="shipping_country" class="form-control" value="{{ invoice.shipping_country|default:'India' }}" placeholder="India">
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Address Line 1</label>
-            <input name="shipping_address_line1" class="form-control" value="{{ invoice.shipping_address_line1|default:'' }}" placeholder="Street / Building">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Address Line 2</label>
-            <input name="shipping_address_line2" class="form-control" value="{{ invoice.shipping_address_line2|default:'' }}" placeholder="Area / Landmark">
-          </div>
-          <div class="grid-3">
-            <div class="form-group">
-              <label class="form-label">City</label>
-              <input name="shipping_city" class="form-control" value="{{ invoice.shipping_city|default:'' }}" placeholder="City">
+              <input name="shipping_name" class="form-control"
+                     value="{{ invoice.shipping_name|default:'' }}"
+                     placeholder="Recipient / Delivery name">
             </div>
             <div class="form-group">
               <label class="form-label">Pincode</label>
-              <input name="shipping_pincode" class="form-control" value="{{ invoice.shipping_pincode|default:'' }}" placeholder="400001" maxlength="10">
-            </div>
-            <div class="form-group">
-              <label class="form-label">State</label>
-              <input name="shipping_state" class="form-control" value="{{ invoice.shipping_state|default:'' }}" placeholder="Maharashtra">
+              <input name="shipping_pincode" class="form-control"
+                     value="{{ invoice.shipping_pincode|default:'' }}"
+                     placeholder="400001" maxlength="10">
             </div>
           </div>
+
+          <div class="form-group">
+            <label class="form-label">Address Line 1</label>
+            <input name="shipping_address_line1" class="form-control"
+                   value="{{ invoice.shipping_address_line1|default:'' }}"
+                   placeholder="Street / Building">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Address Line 2</label>
+            <input name="shipping_address_line2" class="form-control"
+                   value="{{ invoice.shipping_address_line2|default:'' }}"
+                   placeholder="Area / Landmark">
+          </div>
+
+          <!-- City, State, State Code -->
+          <div class="grid-3" style="margin-bottom:12px">
+
+            <!-- City -->
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">City</label>
+              <div class="si-wrap" @click.outside="shipCityOpen = false">
+                <input name="shipping_city" class="form-control" autocomplete="off"
+                       x-model="shipCity" placeholder="Search city…"
+                       @focus="shipCityOpen = true" @input="shipCityOpen = true">
+                <span class="si-chevron">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
+                <div class="si-dropdown" x-show="shipCityOpen && shipCityFiltered.length" style="display:none;">
+                  <template x-for="c in shipCityFiltered" :key="c">
+                    <div class="si-option" @mousedown.prevent="pickShipCity(c)">
+                      <span class="si-option-text" x-text="c"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- State -->
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">State</label>
+              <div class="si-wrap" @click.outside="shipStateOpen = false">
+                <input name="shipping_state" class="form-control" autocomplete="off"
+                       x-model="shipState" placeholder="Search state…"
+                       @focus="shipStateOpen = true" @input="shipStateOpen = true">
+                <span class="si-chevron">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
+                <div class="si-dropdown" x-show="shipStateOpen && shipStateFiltered.length" style="display:none;">
+                  <template x-for="s in shipStateFiltered" :key="s.code">
+                    <div class="si-option" @mousedown.prevent="pickShipState(s)">
+                      <span class="si-badge" x-text="s.code"></span>
+                      <span class="si-option-text" x-text="s.name"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- State Code -->
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">State Code</label>
+              <div class="si-wrap" @click.outside="shipCodeOpen = false">
+                <input name="shipping_state_code" class="form-control" autocomplete="off"
+                       x-model="shipCode" placeholder="e.g. 27" maxlength="2"
+                       @focus="shipCodeOpen = true" @input="shipCodeOpen = true">
+                <span class="si-chevron">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
+                <div class="si-dropdown" x-show="shipCodeOpen && shipCodeFiltered.length" style="display:none;">
+                  <template x-for="s in shipCodeFiltered" :key="s.code">
+                    <div class="si-option" @mousedown.prevent="pickShipCode(s)">
+                      <span class="si-badge" x-text="s.code"></span>
+                      <span class="si-option-text" x-text="s.name"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Country -->
+          <div class="form-group">
+            <label class="form-label">Country</label>
+            <div class="si-wrap" @click.outside="shipCountryOpen = false">
+              <input name="shipping_country" class="form-control" autocomplete="off"
+                     x-model="shipCountry" placeholder="Search country…"
+                     @focus="shipCountryOpen = true" @input="shipCountryOpen = true">
+              <span class="si-chevron">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+              <div class="si-dropdown" x-show="shipCountryOpen && shipCountryFiltered.length" style="display:none;">
+                <template x-for="c in shipCountryFiltered" :key="c">
+                  <div class="si-option" @mousedown.prevent="pickShipCountry(c)">
+                    <span class="si-option-text" x-text="c"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -253,7 +340,7 @@
       <div class="card mb-16">
         <div class="card-header mb-16">
           <span class="card-title">Line Items</span>
-          <button type="button" class="btn btn-sm btn-secondary" @click="addLine()">+ Add Item</button>
+          <button type="button" class="btn btn-sm btn-secondary" @click="addLineAndFocus(lines.length - 1)">+ Add Item</button>
         </div>
 
         <div class="table-container">
@@ -263,46 +350,99 @@
                 <th style="width:28px">#</th>
                 <th style="min-width:220px">Product / Description</th>
                 <th style="width:90px">HSN/SAC</th>
-                <th style="width:80px">Qty</th>
-                <th style="width:70px">Unit</th>
-                <th style="width:110px">Price (Rs)</th>
-                <th style="width:80px">Disc %</th>
-                <th style="width:75px">GST %</th>
-                <th style="width:110px">Amount (Rs)</th>
-                <th style="width:36px"></th>
+                <th style="width:76px">Qty</th>
+                <th style="width:66px">Unit</th>
+                <th style="width:108px">Price (₹)</th>
+                <th style="width:76px">Disc %</th>
+                <th style="width:72px">GST %</th>
+                <th style="width:108px">Amount (₹)</th>
+                <th style="width:32px"></th>
               </tr>
             </thead>
             <tbody id="line-items-body">
               <template x-for="(line, index) in lines" :key="line.id">
                 <tr>
-                  <td x-text="index + 1" class="text-muted text-sm text-center"></td>
+                  <td x-text="index + 1" class="text-muted text-sm text-center" style="padding-top:10px"></td>
 
+                  <!-- Product search cell -->
                   <td>
-                    <div style="position:relative" x-data="{ showProd: false }">
+                    <div x-data="{ showProd: false, hi: -1, _dp: '' }"
+                         @click.outside="showProd = false; hi = -1"
+                         @scroll.window="showProd = false"
+                         @resize.window="showProd = false">
+
                       <input type="text"
                              class="form-control"
-                             :placeholder="'Search or type description...'"
+                             :id="'pi-' + index"
+                             placeholder="Search or type product name…"
                              x-model="line.name"
-                             @focus="showProd = true; loadInitialProducts()"
-                             @input="showProd = true; searchProducts(line.name)"
-                             @keydown.escape="showProd = false"
                              autocomplete="off"
-                             :name="'lines[' + index + '][name]'">
-                      <div class="search-dropdown" x-show="showProd" @click.outside="showProd = false" style="display:none">
+                             :name="'lines[' + index + '][name]'"
+                             @focus="
+                               const r = $event.target.getBoundingClientRect();
+                               _dp = 'position:fixed;top:'+(r.bottom+3)+'px;left:'+r.left+'px;width:'+Math.max(r.width,340)+'px;right:auto';
+                               showProd = true; loadInitialProducts();
+                             "
+                             @input="showProd = true; hi = -1; searchProducts(line.name)"
+                             @keydown="
+                               if ($event.key === 'ArrowDown') {
+                                 $event.preventDefault();
+                                 if (!showProd) { showProd = true; loadInitialProducts(); }
+                                 hi = Math.min(hi + 1, allProducts.length - 1);
+                               } else if ($event.key === 'ArrowUp') {
+                                 $event.preventDefault();
+                                 hi = Math.max(hi - 1, -1);
+                               } else if ($event.key === 'Enter') {
+                                 $event.preventDefault();
+                                 if (hi >= 0 && allProducts[hi]) {
+                                   selectProduct(index, allProducts[hi]);
+                                   line.name = allProducts[hi].name;
+                                   showProd = false; hi = -1;
+                                   addLineAndFocus(index);
+                                 } else {
+                                   showProd = false;
+                                 }
+                               } else if ($event.key === 'Escape') {
+                                 showProd = false; hi = -1;
+                               } else if ($event.key === 'Tab' && showProd && hi >= 0 && allProducts[hi]) {
+                                 $event.preventDefault();
+                                 selectProduct(index, allProducts[hi]);
+                                 line.name = allProducts[hi].name;
+                                 showProd = false; hi = -1;
+                                 addLineAndFocus(index);
+                               }
+                             ">
+
+                      <!-- Dropdown — position:fixed so it escapes table overflow clipping -->
+                      <div class="search-dropdown"
+                           x-show="showProd"
+                           :style="_dp"
+                           style="display:none">
                         <template x-if="allProducts.length > 0">
-                          <div class="search-results-list">
-                            <template x-for="p in allProducts" :key="p.id">
+                          <div>
+                            <template x-for="(p, pi) in allProducts" :key="p.id">
                               <div class="search-result-item"
+                                   :class="{ 'is-focused': pi === hi }"
                                    style="cursor:pointer"
-                                   @mousedown.prevent="selectProduct(index, p); line.name = p.name; showProd = false">
+                                   @mouseenter="hi = pi"
+                                   @mousedown.prevent="
+                                     selectProduct(index, p);
+                                     line.name = p.name;
+                                     showProd = false; hi = -1;
+                                     addLineAndFocus(index);
+                                   ">
                                 <div class="font-bold text-sm" x-text="p.name"></div>
-                                <div class="text-xs text-muted">
-                                  <span x-text="'HSN: ' + p.hsn_code"></span> |
-                                  <span x-text="p.unit"></span> |
-                                  <span x-text="'Rs ' + p.selling_price"></span> |
+                                <div class="text-xs text-muted" style="margin-top:2px">
+                                  <span x-text="'HSN ' + p.hsn_code"></span>
+                                  <span> · </span>
+                                  <span x-text="p.unit"></span>
+                                  <span> · </span>
+                                  <span style="color:var(--gray-800);font-weight:600" x-text="'₹' + p.selling_price"></span>
+                                  <span> · </span>
                                   <span x-text="'GST ' + p.gst_rate + '%'"></span>
                                   <template x-if="p.track_inventory">
-                                    <span x-text="' | Stock: ' + p.current_stock + (p.is_low_stock ? ' ⚠' : '')"></span>
+                                    <span :style="p.is_low_stock ? 'color:var(--warning)' : 'color:var(--success)'"
+                                          x-text="' · Stock: ' + p.current_stock + (p.is_low_stock ? ' ⚠' : '')"></span>
                                   </template>
                                 </div>
                               </div>
@@ -310,41 +450,70 @@
                           </div>
                         </template>
                         <template x-if="allProducts.length === 0">
-                          <div class="search-no-results">No products found</div>
+                          <div class="search-no-results">No products found — press Enter to use typed name</div>
                         </template>
                       </div>
                     </div>
-                    <input type="text"
-                           class="form-control"
-                           style="margin-top:4px;font-size:11px"
-                           placeholder="Additional description (optional)"
-                           x-model="line.description"
-                           :name="'lines[' + index + '][description]'">
+
+                    <!-- Description: collapsed by default, expand with button -->
+                    <div x-data="{ showDesc: !!line.description }" style="margin-top:3px">
+                      <button type="button"
+                              x-show="!showDesc"
+                              @click="showDesc = true; $nextTick(() => $el.parentElement.querySelector('input').focus())"
+                              style="font-size:11px;color:var(--gray-400);background:none;border:none;cursor:pointer;padding:1px 0;line-height:1.2">
+                        + add note
+                      </button>
+                      <input x-show="showDesc"
+                             type="text"
+                             class="form-control"
+                             style="font-size:11px;color:var(--gray-600);padding:3px 6px"
+                             placeholder="Note or description…"
+                             x-model="line.description"
+                             :name="'lines[' + index + '][description]'">
+                    </div>
+
                     <input type="hidden" :name="'lines[' + index + '][product_id]'" :value="line.product_id">
                   </td>
 
                   <td>
-                    <input class="form-control" x-model="line.hsn_code" :name="'lines[' + index + '][hsn_code]'" placeholder="HSN">
+                    <input class="form-control" x-model="line.hsn_code"
+                           :name="'lines[' + index + '][hsn_code]'" placeholder="HSN">
                   </td>
 
                   <td>
-                    <input type="number" class="form-control" x-model.number="line.quantity" :name="'lines[' + index + '][quantity]'" step="0.001" min="0" @input="calculateLine(index)">
+                    <input type="number" class="form-control"
+                           x-model.number="line.quantity"
+                           :name="'lines[' + index + '][quantity]'"
+                           step="0.001" min="0"
+                           @input="calculateLine(index)">
                   </td>
 
                   <td>
-                    <input class="form-control" x-model="line.unit" :name="'lines[' + index + '][unit]'" placeholder="Pcs">
+                    <input class="form-control" x-model="line.unit"
+                           :name="'lines[' + index + '][unit]'" placeholder="Pcs">
                   </td>
 
                   <td>
-                    <input type="number" class="form-control" x-model.number="line.unit_price" :name="'lines[' + index + '][unit_price]'" step="0.01" min="0" @input="calculateLine(index)">
+                    <input type="number" class="form-control"
+                           x-model.number="line.unit_price"
+                           :name="'lines[' + index + '][unit_price]'"
+                           step="0.01" min="0"
+                           @input="calculateLine(index)">
                   </td>
 
                   <td>
-                    <input type="number" class="form-control" x-model.number="line.discount_percent" :name="'lines[' + index + '][discount_percent]'" step="0.01" min="0" max="100" @input="calculateLine(index)">
+                    <input type="number" class="form-control"
+                           x-model.number="line.discount_percent"
+                           :name="'lines[' + index + '][discount_percent]'"
+                           step="0.01" min="0" max="100"
+                           @input="calculateLine(index)">
                   </td>
 
                   <td>
-                    <select class="form-control" x-model.number="line.gst_rate" :name="'lines[' + index + '][gst_rate]'" @change="calculateLine(index)">
+                    <select class="form-control"
+                            x-model.number="line.gst_rate"
+                            :name="'lines[' + index + '][gst_rate]'"
+                            @change="calculateLine(index)">
                       <option value="0">0%</option>
                       <option value="5">5%</option>
                       <option value="12">12%</option>
@@ -356,11 +525,16 @@
 
                   <td style="text-align:right">
                     <div class="font-mono font-bold text-sm" x-text="formatAmount(line.taxable_amount)"></div>
-                    <div class="text-xs text-muted" x-text="'GST: ' + formatAmount(line.tax_amount)"></div>
+                    <div class="text-xs text-muted" x-text="'GST ' + formatAmount(line.tax_amount)"></div>
                   </td>
 
-                  <td>
-                    <button type="button" class="btn btn-icon btn-danger" style="padding:4px 6px" @click="removeLine(index)" x-show="lines.length > 1">X</button>
+                  <td style="text-align:center">
+                    <button type="button"
+                            class="btn btn-icon btn-danger"
+                            style="padding:3px 6px;font-size:13px"
+                            @click="removeLine(index)"
+                            x-show="lines.length > 1"
+                            title="Remove row">×</button>
                   </td>
                 </tr>
               </template>
@@ -368,7 +542,8 @@
           </table>
         </div>
 
-        <button type="button" class="btn btn-sm btn-secondary mt-8" @click="addLine()">+ Add Line Item</button>
+        <button type="button" class="btn btn-sm btn-secondary mt-8"
+                @click="addLineAndFocus(lines.length - 1)">+ Add Line Item</button>
       </div>
 
       <div class="card mb-16">
@@ -551,30 +726,83 @@
       </div>
 
       <div class="grid-4" style="gap:12px;margin-bottom:12px">
+
+        <!-- City combobox -->
         <div class="form-group" style="margin-bottom:0">
           <label class="form-label required">City</label>
-          <input type="text" x-model="createPartyForm.billing_city" class="form-control"
-                 :class="{'is-invalid': createPartyErrors.billing_city}" placeholder="Mumbai">
+          <div class="si-wrap si-drop-up" @click.outside="modalCityOpen = false">
+            <input type="text" class="form-control" autocomplete="off"
+                   x-model="createPartyForm.billing_city" placeholder="Search city…"
+                   :class="{'is-invalid': createPartyErrors.billing_city}"
+                   @focus="modalCityOpen = true" @input="modalCityOpen = true">
+            <span class="si-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+            <div class="si-dropdown" x-show="modalCityOpen && modalCityFiltered.length" style="display:none;">
+              <template x-for="c in modalCityFiltered" :key="c">
+                <div class="si-option" @mousedown.prevent="pickModalCity(c)">
+                  <span class="si-option-text" x-text="c"></span>
+                </div>
+              </template>
+            </div>
+          </div>
           <div class="invalid-feedback" x-show="createPartyErrors.billing_city" x-text="createPartyErrors.billing_city"></div>
         </div>
+
+        <!-- State combobox -->
         <div class="form-group" style="margin-bottom:0">
           <label class="form-label required">State</label>
-          <input type="text" x-model="createPartyForm.billing_state" class="form-control"
-                 :class="{'is-invalid': createPartyErrors.billing_state}" placeholder="Maharashtra">
+          <div class="si-wrap si-drop-up" @click.outside="modalStateOpen = false">
+            <input type="text" class="form-control" autocomplete="off"
+                   x-model="createPartyForm.billing_state" placeholder="Search state…"
+                   :class="{'is-invalid': createPartyErrors.billing_state}"
+                   @focus="modalStateOpen = true" @input="modalStateOpen = true">
+            <span class="si-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+            <div class="si-dropdown" x-show="modalStateOpen && modalStateFiltered.length" style="display:none;">
+              <template x-for="s in modalStateFiltered" :key="s.code">
+                <div class="si-option" @mousedown.prevent="pickModalState(s)">
+                  <span class="si-badge" x-text="s.code"></span>
+                  <span class="si-option-text" x-text="s.name"></span>
+                </div>
+              </template>
+            </div>
+          </div>
           <div class="invalid-feedback" x-show="createPartyErrors.billing_state" x-text="createPartyErrors.billing_state"></div>
         </div>
+
+        <!-- State Code combobox -->
         <div class="form-group" style="margin-bottom:0">
           <label class="form-label required">State Code</label>
-          <input type="text" x-model="createPartyForm.billing_state_code" class="form-control"
-                 :class="{'is-invalid': createPartyErrors.billing_state_code}" placeholder="27" maxlength="2">
+          <div class="si-wrap si-drop-up" @click.outside="modalCodeOpen = false">
+            <input type="text" class="form-control" autocomplete="off"
+                   x-model="createPartyForm.billing_state_code" placeholder="e.g. 27" maxlength="2"
+                   :class="{'is-invalid': createPartyErrors.billing_state_code}"
+                   @focus="modalCodeOpen = true" @input="modalCodeOpen = true">
+            <span class="si-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+            <div class="si-dropdown" x-show="modalCodeOpen && modalCodeFiltered.length" style="display:none;">
+              <template x-for="s in modalCodeFiltered" :key="s.code">
+                <div class="si-option" @mousedown.prevent="pickModalCode(s)">
+                  <span class="si-badge" x-text="s.code"></span>
+                  <span class="si-option-text" x-text="s.name"></span>
+                </div>
+              </template>
+            </div>
+          </div>
           <div class="invalid-feedback" x-show="createPartyErrors.billing_state_code" x-text="createPartyErrors.billing_state_code"></div>
         </div>
+
+        <!-- Pincode (free-text, no dropdown) -->
         <div class="form-group" style="margin-bottom:0">
           <label class="form-label required">Pincode</label>
           <input type="text" x-model="createPartyForm.billing_pincode" class="form-control"
                  :class="{'is-invalid': createPartyErrors.billing_pincode}" placeholder="400001" maxlength="10">
           <div class="invalid-feedback" x-show="createPartyErrors.billing_pincode" x-text="createPartyErrors.billing_pincode"></div>
         </div>
+
       </div>
 
       <div class="flex-center gap-8" style="justify-content:flex-end;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200)">
@@ -621,9 +849,17 @@ function invoiceApp() {
     /* ── Signature mode ── */
     signMode: '{{ invoice.use_esign|yesno:"esign,manual"|default:"esign" }}',
 
+    /* ── Ship To address ── */
+    shipState:   '{{ invoice.shipping_state|default:''|escapejs }}',
+    shipCode:    '{{ invoice.shipping_state_code|default:'' }}',
+    shipCity:    '{{ invoice.shipping_city|default:''|escapejs }}',
+    shipCountry: '{{ invoice.shipping_country|default:'India'|escapejs }}',
+
     /* ── Combobox open flags ── */
     posOpen: false, posCodeOpen: false,
     custStateOpen: false, custCodeOpen: false,
+    modalStateOpen: false, modalCodeOpen: false, modalCityOpen: false,
+    shipStateOpen: false, shipCodeOpen: false, shipCityOpen: false, shipCountryOpen: false,
 
     /* ── Place of Supply filtered lists ── */
     get posFiltered() {
@@ -633,6 +869,42 @@ function invoiceApp() {
     get posCodeFiltered() {
       const q = (this.placeOfSupplyCode || '').trim();
       return (q ? INDIA_STATES.filter(s => s.code.startsWith(q) || s.name.toLowerCase().includes(q.toLowerCase())) : INDIA_STATES).slice(0, 12);
+    },
+
+    /* ── Ship To filtered lists ── */
+    get shipStateFiltered() {
+      const q = (this.shipState || '').toLowerCase().trim();
+      return (q ? INDIA_STATES.filter(s => s.name.toLowerCase().includes(q)) : INDIA_STATES).slice(0, 12);
+    },
+    get shipCodeFiltered() {
+      const q = (this.shipCode || '').trim();
+      return (q ? INDIA_STATES.filter(s => s.code.startsWith(q) || s.name.toLowerCase().includes(q.toLowerCase())) : INDIA_STATES).slice(0, 12);
+    },
+    get shipCityFiltered() {
+      const st = INDIA_STATES.find(s => s.name === this.shipState);
+      const pool = st ? (INDIA_CITIES[st.code] || []) : ALL_INDIA_CITIES;
+      const q = (this.shipCity || '').toLowerCase().trim();
+      return (q ? pool.filter(c => c.toLowerCase().includes(q)) : pool).slice(0, 12);
+    },
+    get shipCountryFiltered() {
+      const q = (this.shipCountry || '').toLowerCase().trim();
+      return (q ? WORLD_COUNTRIES.filter(c => c.toLowerCase().includes(q)) : WORLD_COUNTRIES).slice(0, 12);
+    },
+
+    /* ── Add Party modal filtered lists ── */
+    get modalStateFiltered() {
+      const q = (this.createPartyForm.billing_state || '').toLowerCase().trim();
+      return (q ? INDIA_STATES.filter(s => s.name.toLowerCase().includes(q)) : INDIA_STATES).slice(0, 12);
+    },
+    get modalCodeFiltered() {
+      const q = (this.createPartyForm.billing_state_code || '').trim();
+      return (q ? INDIA_STATES.filter(s => s.code.startsWith(q) || s.name.toLowerCase().includes(q.toLowerCase())) : INDIA_STATES).slice(0, 12);
+    },
+    get modalCityFiltered() {
+      const st = INDIA_STATES.find(s => s.name === this.createPartyForm.billing_state);
+      const pool = st ? (INDIA_CITIES[st.code] || []) : ALL_INDIA_CITIES;
+      const q = (this.createPartyForm.billing_city || '').toLowerCase().trim();
+      return (q ? pool.filter(c => c.toLowerCase().includes(q)) : pool).slice(0, 12);
     },
 
     /* ── Customer (manual) state filtered lists ── */
@@ -650,6 +922,13 @@ function invoiceApp() {
     pickPosCode(s)       { this.placeOfSupply = s.name; this.placeOfSupplyCode = s.code; this.posCodeOpen = false; this.posOpen = false; this.updateInterstate(); },
     pickCustState(s)     { this.customerStateName = s.name; this.customerStateCode = s.code; this.custStateOpen = false; this.custCodeOpen = false; this.updateInterstate(); },
     pickCustCode(s)      { this.customerStateName = s.name; this.customerStateCode = s.code; this.custCodeOpen = false; this.custStateOpen = false; this.updateInterstate(); },
+    pickShipState(s)     { this.shipState = s.name; this.shipCode = s.code; this.shipStateOpen = false; this.shipCodeOpen = false; },
+    pickShipCode(s)      { this.shipState = s.name; this.shipCode = s.code; this.shipCodeOpen = false; this.shipStateOpen = false; },
+    pickShipCity(c)      { this.shipCity = c; this.shipCityOpen = false; },
+    pickShipCountry(c)   { this.shipCountry = c; this.shipCountryOpen = false; },
+    pickModalState(s)    { this.createPartyForm.billing_state = s.name; this.createPartyForm.billing_state_code = s.code; this.modalStateOpen = false; this.modalCodeOpen = false; },
+    pickModalCode(s)     { this.createPartyForm.billing_state = s.name; this.createPartyForm.billing_state_code = s.code; this.modalCodeOpen = false; this.modalStateOpen = false; },
+    pickModalCity(c)     { this.createPartyForm.billing_city = c; this.modalCityOpen = false; },
     amountInWords: '',
     totals: {
       subtotal: 0,
@@ -667,6 +946,8 @@ function invoiceApp() {
       if (existingLines.length > 0) {
         this.lines = existingLines;
       } else {
+        // Start with exactly 1 empty row for new invoices
+        this.lines = [];
         this.addLine();
       }
       this.updateInterstate();
@@ -690,6 +971,22 @@ function invoiceApp() {
         tax_amount: 0,
         line_total: 0,
       });
+    },
+
+    addLineAndFocus(currentIndex) {
+      // If we're on the last row, add a new row
+      if (currentIndex >= this.lines.length - 1) {
+        this.addLine();
+      }
+      const nextIdx = currentIndex + 1;
+      // Wait one tick for Alpine to render the new row, then focus its product input
+      setTimeout(() => {
+        const inp = document.getElementById('pi-' + nextIdx);
+        if (inp) {
+          inp.focus();
+          inp.select();
+        }
+      }, 30);
     },
 
     removeLine(index) {

@@ -17,11 +17,15 @@
 
 <form method="POST"
       x-data="customerForm({
-        gstin:           '{{ form_data.gstin|default:customer.gstin|default:'' }}',
-        billingState:    '{{ form_data.billing_state|default:customer.billing_state|default:'' }}',
-        billingCode:     '{{ form_data.billing_state_code|default:customer.billing_state_code|default:'' }}',
-        billingCity:     '{{ form_data.billing_city|default:customer.billing_city|default:'' }}',
-        billingCountry:  '{{ form_data.billing_country|default:customer.billing_country|default:'India' }}'
+        gstin:            '{{ form_data.gstin|default:customer.gstin|default:'' }}',
+        billingState:     '{{ form_data.billing_state|default:customer.billing_state|default:'' }}',
+        billingCode:      '{{ form_data.billing_state_code|default:customer.billing_state_code|default:'' }}',
+        billingCity:      '{{ form_data.billing_city|default:customer.billing_city|default:'' }}',
+        billingCountry:   '{{ form_data.billing_country|default:customer.billing_country|default:'India' }}',
+        shippingState:    '{{ form_data.shipping_state|default:customer.shipping_state|default:'' }}',
+        shippingCode:     '{{ form_data.shipping_state_code|default:customer.shipping_state_code|default:'' }}',
+        shippingCity:     '{{ form_data.shipping_city|default:customer.shipping_city|default:'' }}',
+        shippingCountry:  '{{ form_data.shipping_country|default:customer.shipping_country|default:'India' }}'
       })">
   {% csrf_token %}
 
