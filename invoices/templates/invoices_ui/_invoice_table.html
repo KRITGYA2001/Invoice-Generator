@@ -57,12 +57,30 @@
             {% else %}
               <span class="badge badge-gray">Cancelled</span>
             {% endif %}
+            {% if inv.status == 'ISSUED' %}
+              {% if inv.payment_status == 'PAID' %}
+                <span class="badge badge-teal" style="margin-top:3px;display:block">Paid</span>
+              {% elif inv.payment_status == 'PARTIAL' %}
+                <span class="badge badge-blue" style="margin-top:3px;display:block">Partial</span>
+              {% else %}
+                <span class="badge badge-rose" style="margin-top:3px;display:block">Unpaid</span>
+              {% endif %}
+            {% endif %}
           </td>
           <td class="actions-col">
             <div class="flex-center gap-4">
               <a href="{% url 'invoices_ui:invoice-detail' inv.pk %}" class="btn btn-sm btn-secondary">View</a>
               {% if inv.status == 'ISSUED' %}
                 <a href="{% url 'invoices_ui:invoice-pdf' inv.pk %}" class="btn btn-sm btn-secondary" title="Download PDF">PDF</a>
+                {% if inv.payment_status != 'PAID' %}
+                  <button class="btn btn-sm btn-primary"
+                          hx-get="{% url 'invoices_ui:invoice-record-payment' inv.pk %}"
+                          hx-target="#modal-container"
+                          hx-swap="innerHTML"
+                          title="Record payment">
+                    + Receive
+                  </button>
+                {% endif %}
               {% endif %}
               {% if inv.status == 'DRAFT' %}
                 <a href="{% url 'invoices_ui:invoice-edit' inv.pk %}" class="btn btn-sm btn-secondary">Edit</a>

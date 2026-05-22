@@ -52,8 +52,8 @@ class CustomerService:
         date_from: date | None = None,
         date_to: date | None = None,
     ) -> dict[str, Any]:
-        """Return a running statement based on issued invoices."""
-        from invoices.models import Invoice
+        """Return a running statement based on issued invoices and payments."""
+        from invoices.models import Invoice, InvoicePayment
 
         invoices = Invoice.objects.filter(customer=customer, status=Invoice.StatusChoices.ISSUED).order_by("invoice_date", "created_at")
         if date_from:
@@ -61,19 +61,44 @@ class CustomerService:
         if date_to:
             invoices = invoices.filter(invoice_date__lte=date_to)
 
+        # Build a combined list of invoice charges and payments, sorted by date
+        invoice_ids = list(invoices.values_list("id", flat=True))
+        payments_qs = InvoicePayment.objects.filter(invoice_id__in=invoice_ids).order_by("payment_date", "created_at")
+
+        entries = []
+        for invoice in invoices:
+            entries.append({
+                "date": invoice.invoice_date,
+                "type": "invoice",
+                "invoice_id": invoice.id,
+                "invoice_no": invoice.invoice_number,
+                "description": f"Invoice #{invoice.invoice_number}",
+                "debit": invoice.grand_total,
+                "credit": Decimal("0"),
+                "sort_key": (invoice.invoice_date, "invoice"),
+            })
+        for payment in payments_qs:
+            entries.append({
+                "date": payment.payment_date,
+                "type": "payment",
+                "invoice_id": payment.invoice_id,
+                "invoice_no": payment.invoice.invoice_number if hasattr(payment, "invoice") else "",
+                "description": f"Payment received ({payment.get_payment_mode_display()})",
+                "debit": Decimal("0"),
+                "credit": payment.amount,
+                "sort_key": (payment.payment_date, "payment"),
+            })
+
+        entries.sort(key=lambda e: e["sort_key"])
+
         running_balance = customer.opening_balance
         transactions: list[dict[str, Any]] = []
-        for invoice in invoices:
-            running_balance += invoice.grand_total
-            transactions.append(
-                {
-                    "invoice_id": invoice.id,
-                    "date": invoice.invoice_date,
-                    "invoice_no": invoice.invoice_number,
-                    "amount": invoice.grand_total,
-                    "balance": running_balance,
-                }
-            )
+        for entry in entries:
+            running_balance += entry["debit"] - entry["credit"]
+            transactions.append({
+                **entry,
+                "balance": running_balance,
+            })
 
         return {
             "customer": {"id": str(customer.id), "name": customer.name, "gstin": customer.gstin},

@@ -85,6 +85,12 @@ class Invoice(models.Model):
 	cancelled_at = models.DateTimeField(null=True, blank=True)
 	cancellation_reason = models.TextField(blank=True)
 	use_esign = models.BooleanField(default=True)
+	amount_received = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+	payment_status = models.CharField(
+		max_length=10,
+		choices=[("UNPAID", "Unpaid"), ("PARTIAL", "Partial"), ("PAID", "Paid")],
+		default="UNPAID",
+	)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 
@@ -133,3 +139,33 @@ class InvoiceLineItem(models.Model):
 
 	def __str__(self) -> str:
 		return f"{self.sr_no}. {self.product_name} x {self.quantity}"
+
+
+class InvoicePayment(models.Model):
+	"""Records a payment received against an invoice."""
+
+	PAYMENT_MODE_CHOICES = [
+		("CASH", "Cash"),
+		("BANK_TRANSFER", "Bank Transfer"),
+		("CHEQUE", "Cheque"),
+		("UPI", "UPI"),
+		("CARD", "Card"),
+		("OTHER", "Other"),
+	]
+
+	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+	invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="payments")
+	amount = models.DecimalField(max_digits=14, decimal_places=2)
+	payment_mode = models.CharField(max_length=20, choices=PAYMENT_MODE_CHOICES)
+	payment_date = models.DateField()
+	reference = models.CharField(max_length=100, blank=True)
+	created_by = models.ForeignKey(
+		settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="recorded_payments"
+	)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ["-payment_date", "-created_at"]
+
+	def __str__(self) -> str:
+		return f"{self.invoice.invoice_number} – {self.amount} ({self.payment_mode})"

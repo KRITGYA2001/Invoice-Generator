@@ -14,7 +14,7 @@
   <a href="{% url 'invoices_ui:invoice-create' %}" class="btn btn-accent btn-lg">+ New Invoice</a>
 </div>
 
-<div class="grid-4 mb-24">
+<div class="grid-4 mb-24" style="grid-template-columns:repeat(6,1fr)">
   <div class="stat-card">
     <div class="stat-label">Total Invoices</div>
     <div class="stat-val">{{ summary.total }}</div>
@@ -23,6 +23,16 @@
     <div class="stat-label">Issued</div>
     <div class="stat-val" style="color:var(--success)">{{ summary.issued_count }}</div>
     <div class="stat-sub">{{ summary.issued_total|indian_rupee }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Received</div>
+    <div class="stat-val" style="color:var(--accent)">{{ summary.received_total|indian_rupee }}</div>
+    <div class="stat-sub">Payments in</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Outstanding</div>
+    <div class="stat-val" style="color:var(--danger)">{{ summary.outstanding_total|indian_rupee }}</div>
+    <div class="stat-sub">Pending receipt</div>
   </div>
   <div class="stat-card">
     <div class="stat-label">Draft</div>
@@ -57,6 +67,20 @@
         <option value="CANCELLED" {% if current_filters.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
       </select>
 
+      <select name="payment_status" class="form-control" style="width:auto" onchange="this.form.submit()">
+        <option value="">All Payments</option>
+        <option value="UNPAID" {% if current_filters.payment_status == 'UNPAID' %}selected{% endif %}>Unpaid</option>
+        <option value="PARTIAL" {% if current_filters.payment_status == 'PARTIAL' %}selected{% endif %}>Partial</option>
+        <option value="PAID" {% if current_filters.payment_status == 'PAID' %}selected{% endif %}>Paid</option>
+      </select>
+
+      <select name="payment_mode" class="form-control" style="width:auto" onchange="this.form.submit()">
+        <option value="">All Modes</option>
+        {% for val, label in payment_modes %}
+          <option value="{{ val }}" {% if current_filters.payment_mode == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
       <select name="financial_year" class="form-control" style="width:auto" onchange="this.form.submit()">
         <option value="">All Years</option>
         {% for fy in financial_years %}
@@ -67,7 +91,7 @@
       <input type="date" name="date_from" class="form-control" style="width:auto" value="{{ current_filters.date_from|default:'' }}" onchange="this.form.submit()">
       <input type="date" name="date_to" class="form-control" style="width:auto" value="{{ current_filters.date_to|default:'' }}" onchange="this.form.submit()">
 
-      {% if current_filters.search or current_filters.status or current_filters.financial_year or current_filters.date_from or current_filters.date_to or current_filters.customer %}
+      {% if current_filters.search or current_filters.status or current_filters.financial_year or current_filters.date_from or current_filters.date_to or current_filters.customer or current_filters.payment_status or current_filters.payment_mode %}
         <a href="{% url 'invoices_ui:invoice-list' %}" class="btn btn-sm btn-secondary">Clear</a>
       {% endif %}
     </div>
@@ -77,4 +101,6 @@
 <div id="invoice-table-container">
   {% include "invoices_ui/_invoice_table.html" %}
 </div>
+
+<div id="modal-container"></div>
 {% endblock %}

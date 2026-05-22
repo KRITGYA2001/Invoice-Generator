@@ -12,6 +12,7 @@ from invoices.views_ui import (
 	InvoiceIssueView,
 	InvoiceListView,
 	InvoicePDFView,
+	InvoiceRecordPaymentView,
 	InvoiceUpdateView,
 	ProductSearchJsonView,
 	ProductSearchView,
@@ -33,4 +34,5 @@ urlpatterns = [
 	path("<uuid:pk>/duplicate/", InvoiceDuplicateView.as_view(), name="invoice-duplicate"),
 	path("<uuid:pk>/pdf/", InvoicePDFView.as_view(), name="invoice-pdf"),
 	path("<uuid:pk>/send-email/", InvoiceEmailView.as_view(), name="invoice-email"),
+	path("<uuid:pk>/record-payment/", InvoiceRecordPaymentView.as_view(), name="invoice-record-payment"),
 ]

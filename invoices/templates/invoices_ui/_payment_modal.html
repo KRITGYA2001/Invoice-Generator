@@ -1,0 +1,68 @@
+{% load ui_tags %}
+<div class="modal-backdrop" x-data @click.self="$el.remove()">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title">Record Payment</h3>
+        <p class="text-sm text-muted">
+          {{ invoice.invoice_number }} &mdash;
+          Total: {{ invoice.grand_total|indian_rupee }} &mdash;
+          Remaining: <strong>{{ remaining|indian_rupee }}</strong>
+        </p>
+      </div>
+      <button @click="$el.closest('.modal-backdrop').remove()" class="btn btn-icon btn-secondary">&times;</button>
+    </div>
+
+    <form hx-post="{% url 'invoices_ui:invoice-record-payment' invoice.pk %}"
+          hx-target="body" hx-swap="none">
+      {% csrf_token %}
+      <div class="modal-body">
+
+        {% if error_message %}
+          <div class="alert alert-danger mb-16">{{ error_message }}</div>
+        {% endif %}
+
+        <div class="form-group mb-16">
+          <label class="form-label required">Amount Received (₹)</label>
+          <input type="number" name="amount" step="0.01" min="0.01"
+                 value="{{ remaining|floatformat:2 }}"
+                 class="form-control {% if errors.amount %}is-invalid{% endif %}"
+                 required autofocus>
+          {% if errors.amount %}<span class="form-error">{{ errors.amount }}</span>{% endif %}
+        </div>
+
+        <div class="form-group mb-16">
+          <label class="form-label required">Payment Mode</label>
+          <select name="payment_mode"
+                  class="form-control {% if errors.payment_mode %}is-invalid{% endif %}"
+                  required>
+            <option value="">Select mode…</option>
+            {% for val, label in payment_modes %}
+              <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.payment_mode %}<span class="form-error">{{ errors.payment_mode }}</span>{% endif %}
+        </div>
+
+        <div class="grid-2 mb-16">
+          <div class="form-group">
+            <label class="form-label required">Payment Date</label>
+            <input type="date" name="payment_date" class="form-control"
+                   value="{{ today|date:'Y-m-d' }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reference / Cheque No.</label>
+            <input type="text" name="reference" class="form-control"
+                   placeholder="Optional">
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary"
+                @click="$el.closest('.modal-backdrop').remove()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Record Payment</button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -19,7 +19,7 @@ from django.views import View
 
 from core.views import OnboardingCheckMixin
 from customers.models import Customer
-from invoices.models import Invoice, InvoiceLineItem
+from invoices.models import Invoice, InvoiceLineItem, InvoicePayment
 from invoices.pdf_service import InvoicePDFService
 from invoices.services import InvoiceNumberGenerator, InvoiceService
 from products.models import Product
@@ -224,6 +224,8 @@ class InvoiceListView(OnboardingCheckMixin, View):
         financial_year = (request.GET.get("financial_year") or "").strip()
         customer_id = (request.GET.get("customer") or "").strip()
         ordering = (request.GET.get("ordering") or "-invoice_date").strip()
+        payment_status_filter = (request.GET.get("payment_status") or "").strip()
+        payment_mode_filter = (request.GET.get("payment_mode") or "").strip()
 
         if search:
             queryset = queryset.filter(
@@ -246,6 +248,12 @@ class InvoiceListView(OnboardingCheckMixin, View):
             queryset = queryset.filter(financial_year=financial_year)
         if customer_id:
             queryset = queryset.filter(customer_id=customer_id)
+        if payment_status_filter in {"UNPAID", "PARTIAL", "PAID"}:
+            queryset = queryset.filter(payment_status=payment_status_filter)
+        if payment_mode_filter:
+            valid_modes = {m[0] for m in InvoicePayment.PAYMENT_MODE_CHOICES}
+            if payment_mode_filter in valid_modes:
+                queryset = queryset.filter(payments__payment_mode=payment_mode_filter).distinct()
 
         if ordering not in ALLOWED_ORDERING:
             ordering = "-invoice_date"
@@ -258,10 +266,16 @@ class InvoiceListView(OnboardingCheckMixin, View):
         if financial_year:
             summary_qs = summary_qs.filter(financial_year=financial_year)
 
+        issued_qs = summary_qs.filter(status=Invoice.StatusChoices.ISSUED)
+        issued_total = issued_qs.aggregate(v=Sum("grand_total")).get("v") or Decimal("0")
+        received_total = issued_qs.aggregate(v=Sum("amount_received")).get("v") or Decimal("0")
+
         summary = {
             "total": summary_qs.count(),
-            "issued_count": summary_qs.filter(status=Invoice.StatusChoices.ISSUED).count(),
-            "issued_total": summary_qs.filter(status=Invoice.StatusChoices.ISSUED).aggregate(v=Sum("grand_total")).get("v") or Decimal("0"),
+            "issued_count": issued_qs.count(),
+            "issued_total": issued_total,
+            "received_total": received_total,
+            "outstanding_total": issued_total - received_total,
             "draft_count": summary_qs.filter(status=Invoice.StatusChoices.DRAFT).count(),
             "cancelled_count": summary_qs.filter(status=Invoice.StatusChoices.CANCELLED).count(),
         }
@@ -282,6 +296,8 @@ class InvoiceListView(OnboardingCheckMixin, View):
             "financial_year": financial_year,
             "customer": customer_id,
             "ordering": ordering,
+            "payment_status": payment_status_filter,
+            "payment_mode": payment_mode_filter,
         }
 
         context = {
@@ -291,6 +307,7 @@ class InvoiceListView(OnboardingCheckMixin, View):
             "financial_years": financial_years,
             "summary": summary,
             "current_filters": current_filters,
+            "payment_modes": InvoicePayment.PAYMENT_MODE_CHOICES,
             "page_title": "Invoices",
         }
         if request.headers.get("HX-Request"):
@@ -866,6 +883,102 @@ class ProductSearchJsonView(View):
             for p in qs
         ]
         return JsonResponse(data, safe=False)
+
+
+@method_decorator(login_required, name="dispatch")
+class InvoiceRecordPaymentView(OnboardingCheckMixin, View):
+    """Record a payment received against an issued invoice."""
+
+    def get(self, request: HttpRequest, pk) -> HttpResponse:
+        company = request.user.company_profile
+        invoice = get_object_or_404(Invoice, company=company, pk=pk)
+        if invoice.status != Invoice.StatusChoices.ISSUED:
+            return HttpResponse('<div class="alert alert-danger">Only issued invoices can receive payments.</div>', status=400)
+        remaining = invoice.grand_total - invoice.amount_received
+        return render(request, "invoices_ui/_payment_modal.html", {
+            "invoice": invoice,
+            "remaining": remaining,
+            "payment_modes": InvoicePayment.PAYMENT_MODE_CHOICES,
+            "today": date.today(),
+        })
+
+    def post(self, request: HttpRequest, pk) -> HttpResponse:
+        from customers.services import CustomerService
+
+        company = request.user.company_profile
+        invoice = get_object_or_404(Invoice, company=company, pk=pk)
+
+        if invoice.status != Invoice.StatusChoices.ISSUED:
+            return HttpResponse('<div class="alert alert-danger">Only issued invoices can receive payments.</div>', status=400)
+
+        amount_str = (request.POST.get("amount") or "").strip()
+        payment_mode = (request.POST.get("payment_mode") or "").strip()
+        payment_date_str = (request.POST.get("payment_date") or "").strip()
+        reference = (request.POST.get("reference") or "").strip()
+
+        errors: dict[str, str] = {}
+        amount = None
+        try:
+            amount = Decimal(amount_str)
+            if amount <= 0:
+                errors["amount"] = "Amount must be greater than zero"
+        except (InvalidOperation, ValueError, TypeError):
+            errors["amount"] = "Enter a valid amount"
+
+        valid_modes = {m[0] for m in InvoicePayment.PAYMENT_MODE_CHOICES}
+        if payment_mode not in valid_modes:
+            errors["payment_mode"] = "Select a valid payment mode"
+
+        payment_date = parse_date(payment_date_str) if payment_date_str else None
+        if not payment_date:
+            payment_date = date.today()
+
+        if errors:
+            remaining = invoice.grand_total - invoice.amount_received
+            return render(request, "invoices_ui/_payment_modal.html", {
+                "invoice": invoice,
+                "remaining": remaining,
+                "payment_modes": InvoicePayment.PAYMENT_MODE_CHOICES,
+                "today": payment_date,
+                "errors": errors,
+            }, status=400)
+
+        try:
+            with transaction.atomic():
+                InvoicePayment.objects.create(
+                    invoice=invoice,
+                    amount=amount,
+                    payment_mode=payment_mode,
+                    payment_date=payment_date,
+                    reference=reference,
+                    created_by=request.user,
+                )
+
+                invoice.amount_received = (invoice.amount_received or Decimal("0")) + amount
+                if invoice.amount_received >= invoice.grand_total:
+                    invoice.payment_status = "PAID"
+                elif invoice.amount_received > 0:
+                    invoice.payment_status = "PARTIAL"
+                else:
+                    invoice.payment_status = "UNPAID"
+                invoice.save(update_fields=["amount_received", "payment_status", "updated_at"])
+
+                if invoice.customer_id:
+                    CustomerService.update_balance(invoice.customer, amount, "subtract")
+
+            messages.success(request, f"Payment of ₹{amount:,.2f} recorded for {invoice.invoice_number}")
+            response = HttpResponse("")
+            response["HX-Redirect"] = reverse("invoices_ui:invoice-list")
+            return response
+        except Exception as exc:
+            remaining = invoice.grand_total - invoice.amount_received
+            return render(request, "invoices_ui/_payment_modal.html", {
+                "invoice": invoice,
+                "remaining": remaining,
+                "payment_modes": InvoicePayment.PAYMENT_MODE_CHOICES,
+                "today": payment_date,
+                "error_message": str(exc),
+            }, status=500)
 
 
 @method_decorator(login_required, name="dispatch")
