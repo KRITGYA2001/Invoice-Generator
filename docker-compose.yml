@@ -1,0 +1,49 @@
+services:
+
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"                   # exposes DB to pgAdmin on localhost:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: invoice_generator
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Django core
+      SECRET_KEY: "docker-local-secret-key-change-this-if-sharing-the-compose-file"
+      DEBUG: "True"
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
+      CORS_ALLOWED_ORIGINS: "http://localhost:8000,http://127.0.0.1:8000"
+      # Database — points to the 'db' service below
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: invoice_generator
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      # Email — console backend for local use (prints emails to Docker logs)
+      EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
+      DEFAULT_FROM_EMAIL: "Invoice Generator <noreply@localhost>"
+      # First-time superuser — auto-created on first run
+      DJANGO_SUPERUSER_EMAIL: admin@example.com
+      DJANGO_SUPERUSER_PASSWORD: admin123
+    volumes:
+      - media_files:/app/media        # uploaded files (e-sign images, etc.)
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:    # database persists across restarts
+  media_files:      # uploaded media persists across restarts
