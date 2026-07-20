@@ -31,7 +31,7 @@
           <div class="form-group">
             <label class="form-label required">Invoice Date</label>
             <input type="date" name="invoice_date" class="form-control"
-                   value="{{ invoice.invoice_date|date:'Y-m-d'|default:today|date:'Y-m-d' }}" required>
+                   value="{{ invoice.invoice_date|default:today|date:'Y-m-d' }}" required>
           </div>
 
           <div class="form-group">

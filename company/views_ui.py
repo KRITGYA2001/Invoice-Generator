@@ -465,6 +465,9 @@ class InvoiceSettingsView(View):
         settings_obj, _ = InvoiceSettings.objects.get_or_create(company=company)
         settings_obj.invoice_prefix = (request.POST.get("invoice_prefix") or settings_obj.invoice_prefix).strip()
         settings_obj.financial_year = (request.POST.get("financial_year") or settings_obj.financial_year).strip()
+        counter_raw = (request.POST.get("invoice_counter") or "").strip()
+        if counter_raw.isdigit() and int(counter_raw) >= 1:
+            settings_obj.invoice_counter = int(counter_raw)
         due_days_raw = (request.POST.get("default_due_days") or "").strip()
         settings_obj.default_due_days = int(due_days_raw) if due_days_raw.isdigit() else settings_obj.default_due_days
         settings_obj.default_transport = (request.POST.get("default_transport") or "").strip()

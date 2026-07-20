@@ -103,13 +103,40 @@ class InvoiceNumberGenerator:
 
     @staticmethod
     def generate(company) -> str:
-        """Generate the next invoice number under a row lock."""
+        """Generate the next invoice number under a row lock.
+
+        Raises:
+            ValueError: If the counter's current number is already in use by
+                another invoice (e.g. the counter was manually edited in
+                Settings to a value that collides with an existing invoice).
+        """
+        from invoices.models import Invoice
+
         with transaction.atomic():
             settings = InvoiceSettings.objects.select_for_update().get(company=company)
             number = f"{settings.invoice_prefix}/{settings.financial_year}/{settings.invoice_counter:04d}"
+            if Invoice.objects.filter(company=company, invoice_number=number).exists():
+                next_available = InvoiceNumberGenerator._next_available(company, settings)
+                raise ValueError(
+                    f"Invoice number {number} is already in use. "
+                    f"The next available number is {next_available}. "
+                    f"Update the invoice counter in Settings and try again."
+                )
             settings.invoice_counter += 1
             settings.save(update_fields=["invoice_counter", "updated_at"])
             return number
+
+    @staticmethod
+    def _next_available(company, settings) -> str:
+        """Find the next invoice number after the counter that isn't already in use."""
+        from invoices.models import Invoice
+
+        counter = settings.invoice_counter
+        while True:
+            candidate = f"{settings.invoice_prefix}/{settings.financial_year}/{counter:04d}"
+            if not Invoice.objects.filter(company=company, invoice_number=candidate).exists():
+                return candidate
+            counter += 1
 
 
 class AmountToWords:
@@ -506,3 +533,26 @@ class InvoiceService:
             invoice.updated_by = user
             invoice.save(update_fields=["status", "cancelled_at", "cancellation_reason", "updated_by", "updated_at"])
             return invoice
+
+    @staticmethod
+    def delete_invoice(invoice, user):
+        """Delete an invoice. If it was issued, reverses stock and balance effects first (same as cancellation)."""
+        with transaction.atomic():
+            invoice = invoice.__class__.objects.select_for_update().get(pk=invoice.pk)
+            if invoice.status == invoice.StatusChoices.ISSUED:
+                for line_item in invoice.line_items.select_related("product").all():
+                    if line_item.product and line_item.product.track_inventory:
+                        StockService.add_stock(
+                            line_item.product,
+                            line_item.quantity,
+                            reference_type="invoice_delete",
+                            reference_id=invoice.id,
+                            notes=f"Deletion of {invoice.invoice_number}",
+                            movement_type="RETURN",
+                            created_by=user,
+                        )
+                if invoice.customer:
+                    CustomerService.update_balance(invoice.customer, invoice.grand_total, "subtract")
+            invoice_number = invoice.invoice_number
+            invoice.delete()
+            return invoice_number

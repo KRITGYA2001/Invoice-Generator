@@ -19,7 +19,7 @@ body {
 .invoice-page {
   width: 210mm;
   min-height: 275mm;
-  border: 1.5px solid #000;
+  border: 2.5px solid #000;
   position: relative;
   background: #fff;
   display: flex;
@@ -128,7 +128,7 @@ body {
 }
 
 /* ── Dividers ── */
-.hr { border: none; border-top: 1px solid #000; width: 100%; margin: 0; }
+.hr { border: none; border-top: 2px solid #000; width: 100%; margin: 0; }
 .hr-light { border: none; border-top: 1px solid #999; width: 100%; margin: 0; }
 
 /* ── Meta section (Invoice details) ── */
@@ -142,7 +142,7 @@ body {
 }
 
 .meta-col:first-child {
-  border-right: 1px solid #000;
+  border-right: 2px solid #000;
 }
 
 .meta-row {
@@ -177,7 +177,7 @@ body {
 }
 
 .address-col:first-child {
-  border-right: 1px solid #000;
+  border-right: 2px solid #000;
 }
 
 .address-label {
@@ -206,7 +206,7 @@ body {
 
 .address-qr-col {
   padding: 6px 8px;
-  border-left: 1px solid #000;
+  border-left: 2px solid #000;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -260,7 +260,7 @@ body {
 }
 
 .items-table th {
-  border: 1px solid #000;
+  border: 1.75px solid #000;
   padding: 5px 5px;
   font-size: 12px;
   font-weight: 700;
@@ -270,7 +270,8 @@ body {
 }
 
 .items-table td {
-  border: 1px solid #000;
+  border-left: 1.75px solid #000;
+  border-right: 1.75px solid #000;
   padding: 4px 5px;
   vertical-align: top;
   color: #000;
@@ -295,16 +296,16 @@ body {
 }
 
 .totals-row .amount-cell {
-  border-left: 1px solid #000;
-  border-right: 1px solid #000;
+  border-left: 1.75px solid #000;
+  border-right: 1.75px solid #000;
   text-align: right;
   font-weight: 500;
 }
 
 /* Grand Total row */
 .grand-total-row td {
-  border-top: 1px solid #000;
-  border-bottom: 1px solid #000;
+  border-top: 2.5px solid #000;
+  border-bottom: 2.5px solid #000;
   border-left: none;
   border-right: none;
   padding: 6px 7px;
@@ -312,8 +313,8 @@ body {
   font-weight: 700;
 }
 
-.grand-total-row td:first-child { border-left: 1px solid #000; }
-.grand-total-row td:last-child  { border-right: 1px solid #000; }
+.grand-total-row td:first-child { border-left: 2.5px solid #000; }
+.grand-total-row td:last-child  { border-right: 2.5px solid #000; }
 
 /* ── GST Summary Table ── */
 .gst-summary {
@@ -323,7 +324,7 @@ body {
 }
 
 .gst-summary th {
-  border: 1px solid #000;
+  border: 1.75px solid #000;
   padding: 4px 7px;
   font-weight: 700;
   background: #fff;
@@ -331,7 +332,7 @@ body {
 }
 
 .gst-summary td {
-  border: 1px solid #000;
+  border: 1.75px solid #000;
   padding: 4px 7px;
   text-align: center;
 }
@@ -387,7 +388,7 @@ body {
 
 .footer-terms {
   padding: 8px 10px;
-  border-right: 1px solid #000;
+  border-right: 2px solid #000;
   overflow: hidden;
 }
 
@@ -412,7 +413,7 @@ body {
 .footer-qr {
   padding: 5px 6px;
   text-align: center;
-  border-right: 1px solid #000;
+  border-right: 2px solid #000;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -623,7 +624,7 @@ body {
       {% endif %}
     </div>
 
-    <div class="address-col" style="border-left:1px solid #000">
+    <div class="address-col" style="border-left:2px solid #000">
       <div class="address-label">Shipped to :</div>
       {% if invoice.shipping_same_as_billing %}
         <div class="address-name">{{ invoice.customer_name }}</div>
@@ -766,9 +767,9 @@ body {
 
       <tr class="grand-total-row">
         <td colspan="4" style="text-align:center; letter-spacing:0.03em;">Grand Total</td>
-        <td colspan="2" style="text-align:center; border-left:1px solid #000; border-right:1px solid #000;">{{ total_qty_display }}</td>
+        <td colspan="2" style="text-align:center; border-left:2.5px solid #000; border-right:2.5px solid #000;">{{ total_qty_display }}</td>
         <td style="border-left:none; border-right:none;"></td>
-        <td style="text-align:right; border-left:1px solid #000; border-right:1px solid #000; font-size:14px;">{{ invoice.grand_total|indian_currency }}</td>
+        <td style="text-align:right; border-left:2.5px solid #000; border-right:2.5px solid #000; font-size:14px;">{{ invoice.grand_total|indian_currency }}</td>
       </tr>
 
     </tbody>

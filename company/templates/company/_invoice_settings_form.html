@@ -15,9 +15,9 @@
         <span class="form-hint">Format: YY-YY e.g. 25-26</span>
       </div>
       <div class="form-group mb-16">
-        <label class="form-label">Starting Number</label>
-        <input class="form-control" type="number" min="1" value="{{ inv_settings.invoice_counter }}" disabled>
-        <span class="form-hint">Next invoice will use this counter (managed automatically)</span>
+        <label class="form-label">Invoice Counter</label>
+        <input name="invoice_counter" x-model.number="counter" class="form-control" type="number" min="1" value="{{ inv_settings.invoice_counter }}">
+        <span class="form-hint">Next invoice will use this number. If it collides with an existing invoice, you'll be shown the next free number when saving.</span>
       </div>
       <div class="inv-number-preview">
         <label class="form-label">Preview</label>
@@ -91,7 +91,7 @@
         <textarea name="invoice_notes" rows="3" class="form-control">{{ inv_settings.invoice_notes|default:'' }}</textarea>
       </div>
       <div class="flex-between mt-24">
-        <span class="text-muted text-sm">Invoice counter: {{ inv_settings.invoice_counter }} (auto-incremented, not editable)</span>
+        <span class="text-muted text-sm">Invoice counter: <span x-text="counter"></span> (auto-increments after each invoice, editable above)</span>
         <button type="submit" class="btn btn-primary btn-lg">Save Invoice Settings</button>
       </div>
     </section>

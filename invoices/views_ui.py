@@ -684,6 +684,25 @@ class InvoiceDuplicateView(View):
 
 
 @method_decorator(login_required, name="dispatch")
+class InvoiceDeleteView(View):
+    def post(self, request: HttpRequest, pk) -> HttpResponse:
+        company = request.user.company_profile
+        invoice = get_object_or_404(Invoice.objects.filter(company=company), pk=pk)
+
+        try:
+            invoice_number = InvoiceService.delete_invoice(invoice, request.user)
+            messages.success(request, f"Invoice {invoice_number} deleted")
+            response = HttpResponse("")
+            response["HX-Redirect"] = reverse("invoices_ui:invoice-list")
+            return response
+        except Exception as exc:
+            messages.error(request, str(exc))
+            response = HttpResponse("")
+            response["HX-Redirect"] = reverse("invoices_ui:invoice-detail", kwargs={"pk": invoice.pk})
+            return response
+
+
+@method_decorator(login_required, name="dispatch")
 class InvoicePDFView(OnboardingCheckMixin, View):
     """
     Generates and downloads invoice PDF using Playwright.

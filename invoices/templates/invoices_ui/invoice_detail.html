@@ -69,6 +69,15 @@
         <button class="btn btn-danger" hx-get="{% url 'invoices_ui:invoice-cancel' invoice.pk %}" hx-target="#modal-container" hx-swap="innerHTML">Cancel Invoice</button>
       {% endif %}
     {% endif %}
+
+    <button class="btn btn-danger"
+            hx-post="{% url 'invoices_ui:invoice-delete' invoice.pk %}"
+            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+            hx-confirm="{% if invoice.status == 'ISSUED' %}Delete invoice {{ invoice.invoice_number }}? This will revert the stock quantities and customer balance changes made when it was issued, and cannot be undone.{% else %}Delete invoice {{ invoice.invoice_number }}? This cannot be undone.{% endif %}"
+            hx-target="body"
+            hx-swap="none">
+      Delete
+    </button>
   </div>
 </div>
 
