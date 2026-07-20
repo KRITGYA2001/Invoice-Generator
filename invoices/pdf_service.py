@@ -91,6 +91,27 @@ class InvoicePDFService:
             breakdown[rate]["cess_amount"] += item.cess_amount
             breakdown[rate]["total_tax"] += item.total_tax
 
+        freight_charges = invoice.freight_charges or Decimal("0")
+        if freight_charges:
+            rate = invoice.freight_gst_rate or Decimal("0")
+            if invoice.is_interstate:
+                cgst_rate = Decimal("0")
+                sgst_rate = Decimal("0")
+                igst_rate = rate
+            else:
+                cgst_rate = rate / 2
+                sgst_rate = rate / 2
+                igst_rate = Decimal("0")
+            breakdown[rate]["gst_rate"] = rate
+            breakdown[rate]["taxable_amount"] += freight_charges
+            breakdown[rate]["cgst_rate"] = cgst_rate
+            breakdown[rate]["cgst_amount"] += invoice.freight_cgst_amount
+            breakdown[rate]["sgst_rate"] = sgst_rate
+            breakdown[rate]["sgst_amount"] += invoice.freight_sgst_amount
+            breakdown[rate]["igst_rate"] = igst_rate
+            breakdown[rate]["igst_amount"] += invoice.freight_igst_amount
+            breakdown[rate]["total_tax"] += invoice.freight_tax_amount
+
         return sorted(breakdown.values(), key=lambda row: row["gst_rate"])
 
     @staticmethod

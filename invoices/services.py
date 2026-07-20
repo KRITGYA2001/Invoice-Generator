@@ -72,15 +72,44 @@ class GSTCalculator:
         }
 
     @staticmethod
-    def calculate_invoice_totals(line_items_data: list[dict[str, Decimal]], apply_round_off: bool = True) -> dict[str, Decimal]:
-        """Aggregate invoice totals from line item calculations."""
+    def calculate_freight_tax(freight_charges: Decimal, freight_gst_rate: Decimal, is_interstate: bool) -> dict[str, Decimal]:
+        """Calculate CGST/SGST/IGST on freight & forwarding charges."""
+        if is_interstate:
+            cgst_rate = ZERO
+            sgst_rate = ZERO
+            igst_rate = freight_gst_rate
+        else:
+            cgst_rate = quantize_money(freight_gst_rate / Decimal("2"))
+            sgst_rate = quantize_money(freight_gst_rate / Decimal("2"))
+            igst_rate = ZERO
+
+        cgst_amount = quantize_money(freight_charges * cgst_rate / Decimal("100"))
+        sgst_amount = quantize_money(freight_charges * sgst_rate / Decimal("100"))
+        igst_amount = quantize_money(freight_charges * igst_rate / Decimal("100"))
+        total_tax = quantize_money(cgst_amount + sgst_amount + igst_amount)
+        return {
+            "cgst_amount": cgst_amount,
+            "sgst_amount": sgst_amount,
+            "igst_amount": igst_amount,
+            "total_tax": total_tax,
+        }
+
+    @staticmethod
+    def calculate_invoice_totals(
+        line_items_data: list[dict[str, Decimal]],
+        apply_round_off: bool = True,
+        freight_charges: Decimal = ZERO,
+        freight_tax: dict[str, Decimal] | None = None,
+    ) -> dict[str, Decimal]:
+        """Aggregate invoice totals from line item calculations, including freight and its GST."""
+        freight_tax = freight_tax or {"cgst_amount": ZERO, "sgst_amount": ZERO, "igst_amount": ZERO, "total_tax": ZERO}
         subtotal = quantize_money(sum((item["taxable_amount"] for item in line_items_data), ZERO))
-        total_cgst = quantize_money(sum((item["cgst_amount"] for item in line_items_data), ZERO))
-        total_sgst = quantize_money(sum((item["sgst_amount"] for item in line_items_data), ZERO))
-        total_igst = quantize_money(sum((item["igst_amount"] for item in line_items_data), ZERO))
+        total_cgst = quantize_money(sum((item["cgst_amount"] for item in line_items_data), ZERO) + freight_tax["cgst_amount"])
+        total_sgst = quantize_money(sum((item["sgst_amount"] for item in line_items_data), ZERO) + freight_tax["sgst_amount"])
+        total_igst = quantize_money(sum((item["igst_amount"] for item in line_items_data), ZERO) + freight_tax["igst_amount"])
         total_cess = quantize_money(sum((item["cess_amount"] for item in line_items_data), ZERO))
         total_tax = quantize_money(total_cgst + total_sgst + total_igst + total_cess)
-        pre_round_total = subtotal + total_tax
+        pre_round_total = subtotal + freight_charges + total_tax
         if apply_round_off:
             round_off = quantize_money(round(pre_round_total) - pre_round_total)
         else:
@@ -387,6 +416,14 @@ class InvoiceService:
                 eway_bill_number=invoice_data.get("eway_bill_number", ""),
                 po_number=invoice_data.get("po_number", ""),
                 po_date=invoice_data.get("po_date") or None,
+                gr_rr_number=invoice_data.get("gr_rr_number", ""),
+                order_by=invoice_data.get("order_by", ""),
+                bags=invoice_data.get("bags", ""),
+                freight_charges=invoice_data.get("freight_charges") or ZERO,
+                freight_gst_rate=invoice_data.get("freight_gst_rate") or ZERO,
+                payment_mode=invoice_data.get("payment_mode", ""),
+                ack_number=invoice_data.get("ack_number", ""),
+                use_esign=invoice_data.get("use_esign", True),
             )
             if customer:
                 InvoiceService._snapshot_customer(invoice, customer)
@@ -415,16 +452,28 @@ class InvoiceService:
         from invoices.models import InvoiceLineItem
 
         line_items = list(invoice.line_items.all().order_by("sr_no"))
+        freight_charges = invoice.freight_charges or ZERO
+        freight_tax = GSTCalculator.calculate_freight_tax(
+            freight_charges=freight_charges,
+            freight_gst_rate=invoice.freight_gst_rate or ZERO,
+            is_interstate=invoice.is_interstate,
+        )
+        invoice.freight_cgst_amount = freight_tax["cgst_amount"]
+        invoice.freight_sgst_amount = freight_tax["sgst_amount"]
+        invoice.freight_igst_amount = freight_tax["igst_amount"]
+        invoice.freight_tax_amount = freight_tax["total_tax"]
+
         if not line_items:
             invoice.subtotal = ZERO
-            invoice.total_cgst = ZERO
-            invoice.total_sgst = ZERO
-            invoice.total_igst = ZERO
+            invoice.total_cgst = freight_tax["cgst_amount"]
+            invoice.total_sgst = freight_tax["sgst_amount"]
+            invoice.total_igst = freight_tax["igst_amount"]
             invoice.total_cess = ZERO
-            invoice.total_tax = ZERO
-            invoice.round_off = ZERO
-            invoice.grand_total = ZERO
-            invoice.amount_in_words = AmountToWords.convert(ZERO)
+            invoice.total_tax = freight_tax["total_tax"]
+            pre_round_total = freight_charges + freight_tax["total_tax"]
+            invoice.round_off = quantize_money(round(pre_round_total) - pre_round_total)
+            invoice.grand_total = quantize_money(pre_round_total + invoice.round_off)
+            invoice.amount_in_words = AmountToWords.convert(invoice.grand_total)
             invoice.save(update_fields=[
                 "subtotal",
                 "total_cgst",
@@ -435,6 +484,10 @@ class InvoiceService:
                 "round_off",
                 "grand_total",
                 "amount_in_words",
+                "freight_cgst_amount",
+                "freight_sgst_amount",
+                "freight_igst_amount",
+                "freight_tax_amount",
                 "updated_at",
             ])
             return invoice
@@ -454,7 +507,12 @@ class InvoiceService:
             line_item.save()
             line_totals.append(line_calc)
 
-        totals = GSTCalculator.calculate_invoice_totals(line_totals, apply_round_off=True)
+        totals = GSTCalculator.calculate_invoice_totals(
+            line_totals,
+            apply_round_off=True,
+            freight_charges=freight_charges,
+            freight_tax=freight_tax,
+        )
         invoice.subtotal = totals["subtotal"]
         invoice.total_cgst = totals["total_cgst"]
         invoice.total_sgst = totals["total_sgst"]
@@ -474,6 +532,10 @@ class InvoiceService:
             "round_off",
             "grand_total",
             "amount_in_words",
+            "freight_cgst_amount",
+            "freight_sgst_amount",
+            "freight_igst_amount",
+            "freight_tax_amount",
             "updated_at",
         ])
         return invoice

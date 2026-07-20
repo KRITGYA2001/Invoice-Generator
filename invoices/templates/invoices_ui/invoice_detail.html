@@ -217,6 +217,9 @@
     <div class="card mb-12">
       <div class="card-title mb-12">Invoice Totals</div>
       <div class="total-row"><span>Subtotal</span><span class="font-mono">{{ invoice.subtotal|indian_rupee }}</span></div>
+      {% if invoice.freight_charges > 0 %}
+        <div class="total-row"><span>Freight Charges</span><span class="font-mono">{{ invoice.freight_charges|indian_rupee }}</span></div>
+      {% endif %}
       {% if not invoice.is_interstate %}
         <div class="total-row"><span>CGST</span><span class="font-mono">{{ invoice.total_cgst|indian_rupee }}</span></div>
         <div class="total-row"><span>SGST</span><span class="font-mono">{{ invoice.total_sgst|indian_rupee }}</span></div>

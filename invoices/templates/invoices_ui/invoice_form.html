@@ -308,8 +308,18 @@
             <div class="form-group">
               <label class="form-label">Freight Charges (₹)</label>
               <input type="number" name="freight_charges" class="form-control" step="0.01" min="0"
-                     value="{{ invoice.freight_charges|default:'0' }}" placeholder="0.00">
-              <span class="form-hint">Added to invoice total on PDF</span>
+                     x-model.number="freightCharges" @input="recalculate()" placeholder="0.00">
+              <span class="form-hint">Added to invoice grand total, taxed at the GST rate selected below</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Freight GST Rate</label>
+              <select name="freight_gst_rate" class="form-control" x-model.number="freightGstRate" @change="recalculate()">
+                <option value="0">0%</option>
+                <option value="5">5%</option>
+                <option value="12">12%</option>
+                <option value="18">18%</option>
+                <option value="28">28%</option>
+              </select>
             </div>
             <div class="form-group">
               <label class="form-label">Payment Mode</label>
@@ -590,6 +600,8 @@
 
         <div class="total-row"><span class="text-sm text-muted">Subtotal</span><span class="font-mono" x-text="formatAmount(totals.subtotal)"></span></div>
 
+        <div class="total-row" x-show="freightCharges > 0"><span class="text-sm text-muted">Freight Charges</span><span class="font-mono" x-text="formatAmount(freightCharges)"></span></div>
+
         <template x-if="!isInterstate">
           <div>
             <div class="total-row"><span class="text-sm text-muted">CGST</span><span class="font-mono" x-text="formatAmount(totals.total_cgst)"></span></div>
@@ -833,6 +845,8 @@ function invoiceApp() {
     customerStateCode: '{{ invoice.customer_state_code|default:'' }}',
     customerStateName: '{{ invoice.customer_state|default:''|escapejs }}',
     customerGSTIN: '{{ invoice.customer_gstin|default:'' }}',
+    freightCharges: {{ invoice.freight_charges|default:'0' }},
+    freightGstRate: {{ invoice.freight_gst_rate|default:'0' }},
 
     /* ── Add Party modal ── */
     showCreatePartyModal: false,
@@ -1052,20 +1066,32 @@ function invoiceApp() {
 
       const subtotal = this.lines.reduce((s, l) => s + (parseFloat(l.taxable_amount) || 0), 0);
       const totalTax = this.lines.reduce((s, l) => s + (parseFloat(l.tax_amount) || 0), 0);
-      const rawTotal = subtotal + totalTax;
+
+      const freightCharges = parseFloat(this.freightCharges) || 0;
+      const freightGstRate = parseFloat(this.freightGstRate) || 0;
+      let freightCgst = 0, freightSgst = 0, freightIgst = 0;
+      if (this.isInterstate) {
+        freightIgst = Math.round(freightCharges * freightGstRate / 100 * 100) / 100;
+      } else {
+        freightCgst = Math.round(freightCharges * freightGstRate / 2 / 100 * 100) / 100;
+        freightSgst = freightCgst;
+      }
+      const freightTax = freightCgst + freightSgst + freightIgst;
+
+      const rawTotal = subtotal + freightCharges + totalTax + freightTax;
       const rounded = Math.round(rawTotal);
       const roundOff = Math.round((rounded - rawTotal) * 100) / 100;
       const grandTotal = rounded;
 
-      const cgst = this.isInterstate ? 0 :
+      const lineCgst = this.isInterstate ? 0 :
         this.lines.reduce((s, l) => {
           const taxable = parseFloat(l.taxable_amount) || 0;
           const gstRate = parseFloat(l.gst_rate) || 0;
           const t = taxable * (gstRate / 2) / 100;
           return s + Math.round(t * 100) / 100;
         }, 0);
-      const sgst = cgst;
-      const igst = !this.isInterstate ? 0 :
+      const lineSgst = lineCgst;
+      const lineIgst = !this.isInterstate ? 0 :
         this.lines.reduce((s, l) => {
           const taxable = parseFloat(l.taxable_amount) || 0;
           const gstRate = parseFloat(l.gst_rate) || 0;
@@ -1073,13 +1099,17 @@ function invoiceApp() {
           return s + Math.round(t * 100) / 100;
         }, 0);
 
+      const cgst = lineCgst + freightCgst;
+      const sgst = lineSgst + freightSgst;
+      const igst = lineIgst + freightIgst;
+
       this.totals = {
         subtotal: Math.round(subtotal * 100) / 100,
         total_cgst: Math.round(cgst * 100) / 100,
         total_sgst: Math.round(sgst * 100) / 100,
         total_igst: Math.round(igst * 100) / 100,
         total_cess: 0,
-        total_tax: Math.round(totalTax * 100) / 100,
+        total_tax: Math.round((totalTax + freightTax) * 100) / 100,
         round_off: roundOff,
         grand_total: grandTotal,
       };
