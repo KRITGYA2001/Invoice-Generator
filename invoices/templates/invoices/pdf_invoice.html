@@ -697,18 +697,19 @@ body {
 
       {% for _ in filler_rows %}
       <tr class="filler-row">
-        <td colspan="8" style="border-top:none;border-bottom:none;"></td>
+        <td></td>
+        <td colspan="7"></td>
       </tr>
       {% endfor %}
 
       <tr class="totals-row">
-        <td colspan="6" style="border:none;"></td>
-        <td style="border:none; text-align:right; font-size:11px; padding-right:4px;">Total</td>
+        <td style="border:none; border-left:1.75px solid #000; border-right:1.75px solid #000;"></td>
+        <td colspan="5" style="border:none; text-align:right; font-size:11px; padding-right:4px;">Total</td>
         <td class="amount-cell">{{ invoice.subtotal|indian_currency }}</td>
       </tr>
 
       <tr class="totals-row">
-        <td style="border:none;"></td>
+        <td style="border:none; border-left:1.75px solid #000; border-right:1.75px solid #000;"></td>
         <td colspan="5" style="border:none; text-align:center; font-style:italic;">
           Add &nbsp;: &nbsp;Freight &amp; Forwarding Charges
         </td>
@@ -718,7 +719,7 @@ body {
 
       {% if not invoice.is_interstate %}
         <tr class="totals-row">
-          <td style="border:none;"></td>
+          <td style="border:none; border-left:1.75px solid #000; border-right:1.75px solid #000;"></td>
           <td colspan="3" style="border:none; text-align:right; font-style:italic;">Add &nbsp;: &nbsp;CGST</td>
           <td colspan="2" style="border:none; text-align:center;">
             {% if first_item %}@ {{ first_item.cgst_rate|strip_zeros }} &nbsp;%{% endif %}
@@ -727,7 +728,7 @@ body {
           <td class="amount-cell">{{ invoice.total_cgst|indian_currency }}</td>
         </tr>
         <tr class="totals-row">
-          <td style="border:none;"></td>
+          <td style="border:none; border-left:1.75px solid #000; border-right:1.75px solid #000;"></td>
           <td colspan="3" style="border:none; text-align:right; font-style:italic;">Add &nbsp;: &nbsp;SGST</td>
           <td colspan="2" style="border:none; text-align:center;">
             {% if first_item %}@ {{ first_item.sgst_rate|strip_zeros }} &nbsp;%{% endif %}
@@ -737,7 +738,7 @@ body {
         </tr>
       {% else %}
         <tr class="totals-row">
-          <td style="border:none;"></td>
+          <td style="border:none; border-left:1.75px solid #000; border-right:1.75px solid #000;"></td>
           <td colspan="3" style="border:none; text-align:right; font-style:italic;">Add &nbsp;: &nbsp;IGST</td>
           <td colspan="2" style="border:none; text-align:center;">
             {% if first_item %}@ {{ first_item.igst_rate|strip_zeros }} &nbsp;%{% endif %}
@@ -749,7 +750,7 @@ body {
 
       {% if invoice.total_cess > 0 %}
         <tr class="totals-row">
-          <td style="border:none;"></td>
+          <td style="border:none; border-left:1.75px solid #000; border-right:1.75px solid #000;"></td>
           <td colspan="3" style="border:none; text-align:right; font-style:italic;">Add &nbsp;: &nbsp;Cess</td>
           <td colspan="2" style="border:none;"></td>
           <td style="border:none;"></td>
@@ -759,8 +760,8 @@ body {
 
       {% if invoice.round_off and invoice.round_off != 0 %}
         <tr class="totals-row">
-          <td colspan="6" style="border:none;"></td>
-          <td style="border:none; text-align:right; font-size:11px;">Round Off</td>
+          <td style="border:none; border-left:1.75px solid #000; border-right:1.75px solid #000;"></td>
+          <td colspan="5" style="border:none; text-align:right; font-size:11px;">Round Off</td>
           <td class="amount-cell">{{ invoice.round_off|indian_currency }}</td>
         </tr>
       {% endif %}

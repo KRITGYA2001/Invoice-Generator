@@ -66,10 +66,12 @@ def indian_currency_no_decimal(value):
 
 @register.filter
 def strip_zeros(value):
-    """Strip trailing zeros from decimal values."""
+    """Strip trailing zeros from the decimal part of a number, without touching the integer part."""
     amount = _to_decimal(value)
-    normalized = amount.normalize()
-    return format(normalized, "f").rstrip("0").rstrip(".") or "0"
+    text = format(amount, "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text or "0"
 
 
 @register.filter
